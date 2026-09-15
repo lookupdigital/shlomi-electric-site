@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# אתר שלומי שירותי חשמל וקבלנות
 
-## Getting Started
+אתר דמו (Next.js) שנבנה לפי קובץ הפיגמה. 3 עמודים: בית, פרויקטים, צור קשר.
 
-First, run the development server:
+## העלאה ל-Vercel
+
+### אפשרות א' — דרך GitHub (מומלץ, מתעדכן אוטומטית בכל שינוי)
+
+1. פותחים ריפו חדש ב-GitHub ומעלים אליו את כל הקבצים שבתיקייה הזו.
+2. נכנסים ל-https://vercel.com/new ומתחברים עם החשבון.
+3. בוחרים את הריפו ולוחצים **Deploy**. אין צורך לשנות אף הגדרה — Vercel מזהה Next.js לבד.
+4. בסיום מתקבל קישור לתצוגה (למשל `https://shlomi-electric-site.vercel.app`).
+
+### אפשרות ב' — דרך הטרמינל (בלי GitHub)
+
+מתוך התיקייה של הפרויקט:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install -g vercel@latest
+vercel login
+vercel --prod
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+עונים Enter על כל השאלות (ברירות המחדל מתאימות). בסיום יודפס קישור לאתר.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## הרצה מקומית
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+דורש Node.js 20 ומעלה.
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+ואז לפתוח את http://localhost:3000
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## איפה משנים מה
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| מה | קובץ |
+| --- | --- |
+| טלפון, וואטסאפ, מייל, כתובת | `src/lib/site.ts` |
+| פרויקטים והמלצות | `src/lib/site.ts` |
+| דף הבית | `src/app/page.tsx` |
+| עמוד פרויקטים | `src/app/projects/page.tsx` |
+| עמוד צור קשר | `src/app/contact/page.tsx` |
+| צבעים ופונטים | `src/app/globals.css` |
+| תמונות | `public/images` |
 
-## Deploy on Vercel
+## מה עוד פתוח
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- מספרי הטלפון והוואטסאפ הם ערכי דמו — להחליף ב-`src/lib/site.ts`.
+- הטפסים מציגים הודעת תודה אבל עדיין לא שולחים את הפרטים לשום מקום.
+- הפונטים המקוריים מהפיגמה (Fb Monopoly Heb, Fb Einstein) בתשלום; כרגע בשימוש Heebo ו-Assistant.
+- חלק מתשובות השאלות הנפוצות הן טקסט זמני לאישור הלקוח.
