@@ -12,6 +12,7 @@ Status: **Milestone 0 — audit + plan, no application code changed** · Revisio
 | Rev | Date | Change |
 | --- | --- | --- |
 | 1 | 2026-09-15 | Initial audit and plan |
+| 3 | 2026-09-15 | **MVP built in one pass (operator decision):** one Supabase project for dev + preview + production (no staging); indexing disabled everywhere until explicitly enabled; categories kept as a text column (no categories table — no category pages in scope); no media table (alt text stored with the image usage); redirects run in `proxy.ts` for all non-core paths (core pages `/`, `/projects`, `/contact` excluded to keep them proxy-free); lead notifications, consent banner and rate limiting deferred. Setup steps: `docs/supabase-setup.md`; content blockers: `docs/launch-content-checklist.md` |
 | 2 | 2026-09-15 | **Correction: a dedicated Supabase project already exists** (`shlomiboaron`, region `ap-northeast-1`). The rev-1 statement "no Supabase project exists" only meant the repository is not connected to Supabase. Plan now targets the existing project (no new project, no region change); env var names fixed; mandatory read-only schema inspection before any migration; M2 credential handoff checklist; region-latency implications; repo re-inspection results |
 
 ---
