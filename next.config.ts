@@ -16,6 +16,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  env: {
+    // Per-build cache key (src/lookup/cache.ts): each build/deployment reads fresh data from Supabase.
+    LOOKUP_BUILD_ID: process.env.LOOKUP_BUILD_ID || String(Date.now()),
+  },
   images: {
     // Images uploaded through the admin live in the Supabase Storage "media" bucket.
     remotePatterns: [{ protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" }],

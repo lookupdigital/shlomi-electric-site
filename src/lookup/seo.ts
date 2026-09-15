@@ -1,6 +1,7 @@
 import "server-only";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
+import { CACHE_BUILD_KEY } from "@/lookup/cache";
 import { composeMetadata } from "@/lookup/seo-model";
 import { getSiteSettings, isIndexable } from "@/lookup/settings";
 import type { Database } from "@/lookup/supabase/database.types";
@@ -19,7 +20,7 @@ const readPageSeo = unstable_cache(
     if (error) throw new Error(`page_seo: ${error.message}`);
     return data ?? [];
   },
-  ["lookup-page-seo"],
+  ["lookup-page-seo", CACHE_BUILD_KEY],
   { tags: [PAGE_SEO_TAG], revalidate: 3600 },
 );
 

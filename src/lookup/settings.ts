@@ -1,5 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { CACHE_BUILD_KEY } from "@/lookup/cache";
 import { isProductionSite } from "@/lookup/runtime";
 import { mergeSiteSettings, type SiteSettings, type SiteSettingsRow } from "@/lookup/settings-model";
 import { createPublicClient } from "@/lookup/supabase/public";
@@ -16,7 +17,7 @@ const readSettingsRow = unstable_cache(
     if (error) throw new Error(`site_settings: ${error.message}`);
     return data;
   },
-  ["lookup-site-settings"],
+  ["lookup-site-settings", CACHE_BUILD_KEY],
   { tags: [SITE_SETTINGS_TAG], revalidate: 3600 },
 );
 

@@ -1,5 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { CACHE_BUILD_KEY } from "@/lookup/cache";
 import type { Database } from "@/lookup/supabase/database.types";
 import { createPublicClient } from "@/lookup/supabase/public";
 
@@ -40,7 +41,7 @@ const readPublishedPosts = unstable_cache(
     if (error) throw new Error(`posts: ${error.message}`);
     return data ?? [];
   },
-  ["lookup-published-posts"],
+  ["lookup-published-posts", CACHE_BUILD_KEY],
   { tags: [POSTS_TAG], revalidate: 3600 },
 );
 
@@ -52,7 +53,7 @@ const readPublishedPost = unstable_cache(
     if (error) throw new Error(`posts: ${error.message}`);
     return data;
   },
-  ["lookup-published-post"],
+  ["lookup-published-post", CACHE_BUILD_KEY],
   { tags: [POSTS_TAG], revalidate: 3600 },
 );
 

@@ -3,7 +3,7 @@ import { findRedirect, isPublishedSlug } from "@/lookup/proxy-data";
 import { updateAdminSession } from "@/lookup/supabase/session";
 import { siteConfig } from "@/site.config";
 
-/** Static route that renders the site's 404 page (see src/app/(site)/lookup-post-not-found). */
+/** Static 404 page for unknown blog slugs (src/app/(site)/lookup-post-not-found). Always served with status 404. */
 const MISSING_POST_ROUTE = "/lookup-post-not-found";
 
 function decodeSegment(value: string): string {
@@ -12,6 +12,10 @@ function decodeSegment(value: string): string {
   } catch {
     return value;
   }
+}
+
+function notFoundResponse(request: NextRequest) {
+  return NextResponse.rewrite(new URL(MISSING_POST_ROUTE, request.url), { status: 404 });
 }
 
 export async function proxy(request: NextRequest) {
@@ -26,6 +30,9 @@ export async function proxy(request: NextRequest) {
 
   if (isAdminPath) return updateAdminSession(request);
 
+  // Direct visits to the internal 404 page must not return 200.
+  if (pathname === MISSING_POST_ROUTE) return notFoundResponse(request);
+
   const redirect = await findRedirect(pathname);
   if (redirect) {
     const target = new URL(redirect.destination, request.url);
@@ -33,13 +40,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(target, redirect.statusCode);
   }
 
-  // Unknown blog slugs are answered from a static 404 page instead of rendering (and ISR-caching) a 404 per URL.
+  // Unknown blog slugs are answered from the static 404 page instead of rendering (and ISR-caching) a 404 per URL.
   const blogPrefix = `${siteConfig.routes.blog.path}/`;
   if (pathname.startsWith(blogPrefix)) {
     const slug = decodeSegment(pathname.slice(blogPrefix.length).replace(/\/+$/, ""));
-    if (slug && !slug.includes("/") && (await isPublishedSlug(slug)) === false) {
-      return NextResponse.rewrite(new URL(MISSING_POST_ROUTE, request.url), { status: 404 });
-    }
+    if (slug && !slug.includes("/") && (await isPublishedSlug(slug)) === false) return notFoundResponse(request);
   }
 
   return NextResponse.next();
