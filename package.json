@@ -9,7 +9,11 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "check:secrets": "node scripts/check-secrets.mjs"
+    "test:e2e": "playwright test",
+    "db:types": "node scripts/generate-db-types.mjs",
+    "db:types:check": "node scripts/generate-db-types.mjs --check",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check:supabase": "node scripts/check-supabase.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -26,6 +30,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

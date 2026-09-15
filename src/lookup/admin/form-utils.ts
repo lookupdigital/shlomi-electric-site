@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { t } from "@/lookup/admin/i18n";
 
 export type FormState = { ok: boolean; message: string } | null;
 
@@ -27,24 +28,21 @@ const SUPABASE_PUBLIC_OBJECT = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1
 export const imageUrl = z
   .string()
   .max(1000)
-  .refine(
-    (value) => (value.startsWith("/") && !value.startsWith("//")) || SUPABASE_PUBLIC_OBJECT.test(value),
-    "יש להעלות תמונה או להזין נתיב שמתחיל ב-/",
-  );
+  .refine((value) => (value.startsWith("/") && !value.startsWith("//")) || SUPABASE_PUBLIC_OBJECT.test(value), t.media.invalidUrl);
 
 export const httpsUrl = z
   .string()
   .max(1000)
-  .refine((value) => /^https:\/\//i.test(value) && URL.canParse(value), "כתובת מלאה שמתחילה ב-https://");
+  .refine((value) => /^https:\/\//i.test(value) && URL.canParse(value), t.settings.validation.siteUrl);
 
 export const httpUrl = z
   .string()
   .max(1000)
-  .refine((value) => /^https?:\/\//i.test(value) && URL.canParse(value), "כתובת מלאה שמתחילה ב-https://");
+  .refine((value) => /^https?:\/\//i.test(value) && URL.canParse(value), t.settings.validation.siteUrl);
 
 export function firstIssue(error: z.ZodError, labels: Record<string, string> = {}): string {
   const issue = error.issues[0];
-  if (!issue) return "הנתונים אינם תקינים";
+  if (!issue) return t.common.invalidData;
   const key = String(issue.path[0] ?? "");
   const label = labels[key] ?? key;
   return label ? `${label}: ${issue.message}` : issue.message;

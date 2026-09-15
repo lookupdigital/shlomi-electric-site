@@ -3,7 +3,9 @@ import Button from "@/components/Button";
 import CtaSection from "@/components/CtaSection";
 import Faq from "@/components/Faq";
 import Stats from "@/components/Stats";
+import { faqSchema, JsonLd } from "@/lookup/schema";
 import { buildPageMetadata } from "@/lookup/seo";
+import { siteConfig } from "@/site.config";
 
 export function generateMetadata() {
   return buildPageMetadata({ path: "/contact", title: "צור קשר" });
@@ -67,6 +69,7 @@ export default function ContactPage() {
         submitLabel="שלחו פרטים"
       />
 
+      {siteConfig.faq.structuredData && <JsonLd data={faqSchema(faq)} />}
       <Faq items={faq} />
     </>
   );

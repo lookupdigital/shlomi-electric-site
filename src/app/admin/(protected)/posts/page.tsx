@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { t } from "@/lookup/admin/i18n";
 import { primaryButton } from "@/lookup/admin/styles";
 import { formatDateTime, Notice, PageHeader, StatusBadge } from "@/lookup/admin/ui";
 import { requireAdmin } from "@/lookup/auth";
+import { siteConfig } from "@/site.config";
 
-export const metadata: Metadata = { title: "פוסטים" };
+export const metadata: Metadata = { title: t.posts.title };
 
 export default async function PostsListPage() {
   const { supabase } = await requireAdmin();
@@ -12,27 +14,28 @@ export default async function PostsListPage() {
     .from("posts")
     .select("id,title,slug,status,published_at,updated_at")
     .order("updated_at", { ascending: false });
+  const p = t.posts;
 
   return (
     <>
       <PageHeader
-        title="פוסטים"
+        title={p.title}
         actions={
           <Link href="/admin/posts/new" className={primaryButton}>
-            פוסט חדש
+            {p.newPost}
           </Link>
         }
       />
-      {error && <Notice tone="error">הטעינה נכשלה: {error.message}</Notice>}
+      {error && <Notice tone="error">{t.common.loadFailed(error.message)}</Notice>}
 
       <div className="overflow-x-auto rounded-xl border border-line bg-white">
-        <table className="w-full min-w-[640px] text-start text-sm">
+        <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-offwhite text-muted">
             <tr>
-              <th className="px-4 py-3 text-start font-semibold">כותרת</th>
-              <th className="px-4 py-3 text-start font-semibold">סטטוס</th>
-              <th className="px-4 py-3 text-start font-semibold">פרסום</th>
-              <th className="px-4 py-3 text-start font-semibold">עודכן</th>
+              <th className="px-4 py-3 text-start font-semibold">{p.columns.title}</th>
+              <th className="px-4 py-3 text-start font-semibold">{p.columns.status}</th>
+              <th className="px-4 py-3 text-start font-semibold">{p.columns.published}</th>
+              <th className="px-4 py-3 text-start font-semibold">{p.columns.updated}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -50,18 +53,20 @@ export default async function PostsListPage() {
                 <td className="px-4 py-3 text-muted">{formatDateTime(post.published_at)}</td>
                 <td className="px-4 py-3 text-muted">{formatDateTime(post.updated_at)}</td>
                 <td className="px-4 py-3 text-end">
-                  {post.status === "published" && (
-                    <Link href={`/blog/${post.slug}`} target="_blank" className="text-xs text-muted hover:text-ink">
-                      צפייה ↗
-                    </Link>
-                  )}
+                  <Link
+                    href={post.status === "published" ? `${siteConfig.routes.blog.path}/${post.slug}` : `/admin/preview/posts/${post.id}`}
+                    target="_blank"
+                    className="text-xs text-muted hover:text-ink"
+                  >
+                    {post.status === "published" ? p.view : p.preview}
+                  </Link>
                 </td>
               </tr>
             ))}
             {!posts?.length && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-muted">
-                  עדיין אין פוסטים.
+                  {p.empty}
                 </td>
               </tr>
             )}

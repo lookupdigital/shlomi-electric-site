@@ -1,45 +1,10 @@
 // Site settings model: pure, client-safe types and helpers (no data access).
+import type { SiteConfig } from "@/lookup/config";
+import type { Database } from "@/lookup/supabase/database.types";
 
-export type SiteSettingsRow = {
-  id: number;
-  business_name: string | null;
-  site_name: string | null;
-  site_url: string | null;
-  phone: string | null;
-  whatsapp: string | null;
-  email: string | null;
-  address: string | null;
-  logo_url: string | null;
-  favicon_url: string | null;
-  facebook_url: string | null;
-  instagram_url: string | null;
-  linkedin_url: string | null;
-  tiktok_url: string | null;
-  youtube_url: string | null;
-  default_meta_title: string | null;
-  default_meta_description: string | null;
-  default_og_image_url: string | null;
-  indexing_enabled: boolean;
-  local_business_schema_enabled: boolean;
-  gtm_id: string | null;
-  ga4_id: string | null;
-  meta_pixel_id: string | null;
-  tiktok_pixel_id: string | null;
-  linkedin_partner_id: string | null;
-  updated_at: string;
-};
+export type SiteSettingsRow = Database["public"]["Tables"]["site_settings"]["Row"];
 
-/** Client-specific fallbacks used when a setting is empty or the database is unavailable. */
-export type SiteDefaults = {
-  businessName: string;
-  siteName: string;
-  phone: string;
-  whatsapp: string;
-  email: string;
-  address: string;
-  logoUrl: string;
-  defaultMetaDescription: string;
-};
+export type ConsentDefault = "granted" | "denied";
 
 export type SiteSettings = {
   businessName: string;
@@ -57,10 +22,11 @@ export type SiteSettings = {
   defaultOgImageUrl: string;
   indexingEnabled: boolean;
   localBusinessSchemaEnabled: boolean;
+  consentDefault: ConsentDefault;
   tracking: { gtmId: string; ga4Id: string; metaPixelId: string; tiktokPixelId: string; linkedinPartnerId: string };
 };
 
-const text = (value: string | null | undefined, fallback = "") => value?.trim() || fallback;
+const text = (value: string | null | undefined) => value?.trim() ?? "";
 
 export function normalizeOrigin(value?: string | null): string {
   if (!value) return "";
@@ -72,20 +38,26 @@ export function normalizeOrigin(value?: string | null): string {
   }
 }
 
+/**
+ * The database is the source of truth: an empty value stays empty (no demo/code fallbacks), so a field an admin
+ * clears never reappears. The only fallbacks are structural: the brand name when the site name is empty,
+ * the logo file shipped with the site, and the site URL from the environment.
+ */
 export function mergeSiteSettings(
-  row: SiteSettingsRow | null,
-  defaults: SiteDefaults,
-  productionHost?: string,
+  row: Partial<SiteSettingsRow> | null,
+  config: Pick<SiteConfig, "identity" | "branding">,
+  fallbackSiteUrl?: string,
 ): SiteSettings {
+  const siteName = text(row?.site_name) || config.identity.siteName;
   return {
-    businessName: text(row?.business_name, defaults.businessName),
-    siteName: text(row?.site_name, defaults.siteName),
-    siteUrl: normalizeOrigin(row?.site_url) || normalizeOrigin(productionHost) || "http://localhost:3000",
-    phone: text(row?.phone, defaults.phone),
-    whatsapp: text(row?.whatsapp, defaults.whatsapp),
-    email: text(row?.email, defaults.email),
-    address: text(row?.address, defaults.address),
-    logoUrl: text(row?.logo_url, defaults.logoUrl),
+    businessName: text(row?.business_name) || siteName,
+    siteName,
+    siteUrl: normalizeOrigin(row?.site_url) || normalizeOrigin(fallbackSiteUrl) || "http://localhost:3000",
+    phone: text(row?.phone),
+    whatsapp: text(row?.whatsapp),
+    email: text(row?.email),
+    address: text(row?.address),
+    logoUrl: text(row?.logo_url) || config.branding.logoUrl,
     faviconUrl: text(row?.favicon_url),
     social: {
       facebook: text(row?.facebook_url),
@@ -95,10 +67,11 @@ export function mergeSiteSettings(
       youtube: text(row?.youtube_url),
     },
     defaultMetaTitle: text(row?.default_meta_title),
-    defaultMetaDescription: text(row?.default_meta_description, defaults.defaultMetaDescription),
+    defaultMetaDescription: text(row?.default_meta_description),
     defaultOgImageUrl: text(row?.default_og_image_url),
     indexingEnabled: row?.indexing_enabled === true,
     localBusinessSchemaEnabled: row?.local_business_schema_enabled === true,
+    consentDefault: row?.consent_default === "denied" ? "denied" : "granted",
     tracking: {
       gtmId: text(row?.gtm_id),
       ga4Id: text(row?.ga4_id),
@@ -109,22 +82,29 @@ export function mergeSiteSettings(
   };
 }
 
-/** "03-555-1234" → "tel:+97235551234" (Israeli local numbers get the +972 prefix). */
-export function phoneHref(phone: string): string {
-  const trimmed = phone.trim();
+type PhoneRules = SiteConfig["phone"];
+
+function internationalDigits(value: string, rules: PhoneRules): string {
+  const trimmed = value.trim();
   const digits = trimmed.replace(/\D/g, "");
   if (!digits) return "";
-  if (trimmed.startsWith("+")) return `tel:+${digits}`;
-  if (digits.startsWith("0")) return `tel:+972${digits.slice(1)}`;
-  return `tel:+${digits}`;
+  if (trimmed.startsWith("+")) return digits;
+  if (rules.nationalTrunkPrefix && digits.startsWith(rules.nationalTrunkPrefix)) {
+    return `${rules.countryCallingCode}${digits.slice(rules.nationalTrunkPrefix.length)}`;
+  }
+  return digits;
+}
+
+/** National numbers get the configured country code, e.g. "03-555-1234" → "tel:+97235551234". */
+export function phoneHref(phone: string, rules: PhoneRules): string {
+  const digits = internationalDigits(phone, rules);
+  return digits ? `tel:+${digits}` : "";
 }
 
 /** "050-000-0000" or "972500000000" → "https://wa.me/972500000000". */
-export function whatsappHref(number: string): string {
-  let digits = number.replace(/\D/g, "");
-  if (!digits) return "";
-  if (digits.startsWith("0")) digits = `972${digits.slice(1)}`;
-  return `https://wa.me/${digits}`;
+export function whatsappHref(number: string, rules: PhoneRules): string {
+  const digits = internationalDigits(number.replace(/^\+/, ""), rules);
+  return digits ? `https://wa.me/${digits}` : "";
 }
 
 export function absoluteUrl(origin: string, pathOrUrl: string): string {

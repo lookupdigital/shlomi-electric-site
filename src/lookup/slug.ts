@@ -1,13 +1,16 @@
-/** Lowercase latin letters, digits and Hebrew letters separated by single hyphens. */
-export const SLUG_PATTERN = /^[a-z0-9א-ת]+(-[a-z0-9א-ת]+)*$/;
+/**
+ * Lowercase letters (any script) and digits separated by single hyphens. No spaces, uppercase or URL delimiters.
+ * Mirrors the posts_slug_check constraint in supabase/migrations.
+ */
+export const SLUG_PATTERN = /^[^\s\p{Lu}/?#%&"'<>\\-]+(-[^\s\p{Lu}/?#%&"'<>\\-]+)*$/u;
 
 export function slugify(input: string): string {
   return input
     .trim()
     .toLowerCase()
     .normalize("NFKC")
-    .replace(/[֑-ׇ]/g, "") // Hebrew niqqud and cantillation marks
-    .replace(/[^a-z0-9א-ת]+/g, "-")
+    .replace(/\p{M}/gu, "") // combining marks (e.g. Hebrew niqqud, detached accents)
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 120)
     .replace(/-+$/g, "");

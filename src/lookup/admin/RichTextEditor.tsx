@@ -4,6 +4,7 @@ import Image from "@tiptap/extension-image";
 import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { t } from "@/lookup/admin/i18n";
 import { ACCEPTED_IMAGE_TYPES, uploadImage } from "@/lookup/media";
 
 const EMPTY_DOC: JSONContent = { type: "doc", content: [{ type: "paragraph" }] };
@@ -26,37 +27,63 @@ function ToolbarButton({ label, active, onClick, children }: { label: string; ac
   );
 }
 
+function countImages(editor: Editor): number {
+  let count = 0;
+  editor.state.doc.descendants((node) => {
+    if (node.type.name === "image") count += 1;
+  });
+  return count;
+}
+
+/**
+ * Inserts an image as a top-level block. When the cursor is inside a quote or a list (where an inline insert
+ * silently fails), the image is placed directly after that block. Returns false if nothing was inserted.
+ */
+export function insertImage(editor: Editor, attrs: { src: string; alt: string }): boolean {
+  const before = countImages(editor);
+  const { $from } = editor.state.selection;
+  if ($from.depth > 1) {
+    editor.chain().focus().insertContentAt($from.after(1), { type: "image", attrs }).run();
+  } else {
+    editor.chain().focus().setImage(attrs).run();
+    if (countImages(editor) === before && $from.depth === 1) {
+      editor.chain().focus().insertContentAt($from.after(1), { type: "image", attrs }).run();
+    }
+  }
+  return countImages(editor) > before;
+}
+
 function Toolbar({ editor, onImage, uploading }: { editor: Editor; onImage: () => void; uploading: boolean }) {
   const chain = () => editor.chain().focus();
 
   function setLink() {
     const previous = (editor.getAttributes("link").href as string | undefined) ?? "";
-    const input = window.prompt("כתובת הקישור (https://…, /עמוד, mailto:, tel:). השאירו ריק כדי להסיר", previous);
+    const input = window.prompt(t.editor.linkPrompt, previous);
     if (input === null) return;
     const href = input.trim();
     if (href === "") {
       chain().extendMarkRange("link").unsetLink().run();
     } else if (!SAFE_LINK.test(href)) {
-      window.alert("כתובת לא נתמכת. השתמשו ב-https://, /נתיב, mailto: או tel:");
+      window.alert(t.editor.linkInvalid);
     } else {
       chain().extendMarkRange("link").setLink({ href }).run();
     }
   }
 
   return (
-    <div className="flex flex-wrap gap-1 border-b border-line bg-offwhite p-2" role="toolbar" aria-label="עיצוב טקסט">
-      <ToolbarButton label="פסקה" active={editor.isActive("paragraph")} onClick={() => chain().setParagraph().run()}>¶</ToolbarButton>
-      <ToolbarButton label="כותרת H2" active={editor.isActive("heading", { level: 2 })} onClick={() => chain().toggleHeading({ level: 2 }).run()}>H2</ToolbarButton>
-      <ToolbarButton label="כותרת H3" active={editor.isActive("heading", { level: 3 })} onClick={() => chain().toggleHeading({ level: 3 }).run()}>H3</ToolbarButton>
-      <ToolbarButton label="מודגש" active={editor.isActive("bold")} onClick={() => chain().toggleBold().run()}><b>B</b></ToolbarButton>
-      <ToolbarButton label="נטוי" active={editor.isActive("italic")} onClick={() => chain().toggleItalic().run()}><i>I</i></ToolbarButton>
-      <ToolbarButton label="רשימת תבליטים" active={editor.isActive("bulletList")} onClick={() => chain().toggleBulletList().run()}>• רשימה</ToolbarButton>
-      <ToolbarButton label="רשימה ממוספרת" active={editor.isActive("orderedList")} onClick={() => chain().toggleOrderedList().run()}>1. רשימה</ToolbarButton>
-      <ToolbarButton label="ציטוט" active={editor.isActive("blockquote")} onClick={() => chain().toggleBlockquote().run()}>”ציטוט</ToolbarButton>
-      <ToolbarButton label="קישור" active={editor.isActive("link")} onClick={setLink}>קישור</ToolbarButton>
-      <ToolbarButton label="הוספת תמונה" onClick={onImage}>{uploading ? "מעלה…" : "תמונה"}</ToolbarButton>
-      <ToolbarButton label="ביטול" onClick={() => chain().undo().run()}>↶</ToolbarButton>
-      <ToolbarButton label="ביצוע מחדש" onClick={() => chain().redo().run()}>↷</ToolbarButton>
+    <div className="flex flex-wrap gap-1 border-b border-line bg-offwhite p-2" role="toolbar" aria-label={t.editor.toolbar}>
+      <ToolbarButton label={t.editor.paragraph} active={editor.isActive("paragraph")} onClick={() => chain().setParagraph().run()}>¶</ToolbarButton>
+      <ToolbarButton label={t.editor.heading2} active={editor.isActive("heading", { level: 2 })} onClick={() => chain().toggleHeading({ level: 2 }).run()}>H2</ToolbarButton>
+      <ToolbarButton label={t.editor.heading3} active={editor.isActive("heading", { level: 3 })} onClick={() => chain().toggleHeading({ level: 3 }).run()}>H3</ToolbarButton>
+      <ToolbarButton label={t.editor.bold} active={editor.isActive("bold")} onClick={() => chain().toggleBold().run()}><b>B</b></ToolbarButton>
+      <ToolbarButton label={t.editor.italic} active={editor.isActive("italic")} onClick={() => chain().toggleItalic().run()}><i>I</i></ToolbarButton>
+      <ToolbarButton label={t.editor.bulletList} active={editor.isActive("bulletList")} onClick={() => chain().toggleBulletList().run()}>•</ToolbarButton>
+      <ToolbarButton label={t.editor.orderedList} active={editor.isActive("orderedList")} onClick={() => chain().toggleOrderedList().run()}>1.</ToolbarButton>
+      <ToolbarButton label={t.editor.quote} active={editor.isActive("blockquote")} onClick={() => chain().toggleBlockquote().run()}>”</ToolbarButton>
+      <ToolbarButton label={t.editor.link} active={editor.isActive("link")} onClick={setLink}>🔗</ToolbarButton>
+      <ToolbarButton label={t.editor.image} onClick={onImage}>{uploading ? t.editor.uploading : "🖼"}</ToolbarButton>
+      <ToolbarButton label={t.editor.undo} onClick={() => chain().undo().run()}>↶</ToolbarButton>
+      <ToolbarButton label={t.editor.redo} onClick={() => chain().redo().run()}>↷</ToolbarButton>
     </div>
   );
 }
@@ -84,7 +111,7 @@ export default function RichTextEditor({ name, initialContent }: { name: string;
       Image.configure({ inline: false, allowBase64: false }),
     ],
     content: initial,
-    editorProps: { attributes: { class: "rich-text min-h-[320px] px-5 py-4 focus:outline-none", dir: "rtl" } },
+    editorProps: { attributes: { class: "rich-text min-h-[320px] px-5 py-4 focus:outline-none", dir: t.dir } },
     onUpdate: ({ editor: current }) => setJson(JSON.stringify(current.getJSON())),
   });
 
@@ -95,8 +122,8 @@ export default function RichTextEditor({ name, initialContent }: { name: string;
     setUploading(true);
     try {
       const src = await uploadImage(file);
-      const alt = window.prompt("טקסט חלופי לתמונה (alt) — תיאור קצר של מה שרואים בה") ?? "";
-      editor.chain().focus().setImage({ src, alt: alt.trim() }).run();
+      const alt = window.prompt(t.editor.altPrompt) ?? "";
+      if (!insertImage(editor, { src, alt: alt.trim() })) window.alert(t.editor.imageInsertFailed);
     } catch (error) {
       window.alert((error as Error).message);
     } finally {

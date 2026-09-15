@@ -1,3 +1,4 @@
+import type { SiteConfig } from "@/lookup/config";
 import { absoluteUrl, type SiteSettings } from "@/lookup/settings-model";
 
 type Schema = Record<string, unknown>;
@@ -15,6 +16,8 @@ export function JsonLd({ data }: { data: Schema | Schema[] }) {
   );
 }
 
+type SchemaConfig = Pick<SiteConfig, "locale" | "schema">;
+
 export function organizationSchema(settings: SiteSettings): Schema {
   const sameAs = Object.values(settings.social).filter(Boolean);
   return {
@@ -27,38 +30,36 @@ export function organizationSchema(settings: SiteSettings): Schema {
   };
 }
 
-export function websiteSchema(settings: SiteSettings): Schema {
+export function websiteSchema(settings: SiteSettings, config: SchemaConfig): Schema {
   return {
     "@type": "WebSite",
     "@id": `${settings.siteUrl}/#website`,
     name: settings.siteName,
     url: settings.siteUrl,
-    inLanguage: "he-IL",
+    inLanguage: config.locale.bcp47,
     publisher: { "@id": `${settings.siteUrl}/#organization` },
   };
 }
 
 /** Only emitted after an admin confirms the business details are real (local_business_schema_enabled). */
-export function localBusinessSchema(settings: SiteSettings): Schema {
+export function localBusinessSchema(settings: SiteSettings, config: SchemaConfig): Schema {
   return {
-    "@type": ["Electrician", "GeneralContractor"],
+    "@type": config.schema.businessTypes.length === 1 ? config.schema.businessTypes[0] : config.schema.businessTypes,
     "@id": `${settings.siteUrl}/#localbusiness`,
     name: settings.businessName,
     url: settings.siteUrl,
     image: absoluteUrl(settings.siteUrl, settings.logoUrl),
     telephone: settings.phone || undefined,
     email: settings.email || undefined,
-    address: settings.address
-      ? { "@type": "PostalAddress", streetAddress: settings.address, addressCountry: "IL" }
-      : undefined,
+    address: settings.address ? { "@type": "PostalAddress", streetAddress: settings.address } : undefined,
   };
 }
 
-export function siteSchemas(settings: SiteSettings): Schema[] {
+export function siteSchemas(settings: SiteSettings, config: SchemaConfig): Schema[] {
   return [
     organizationSchema(settings),
-    websiteSchema(settings),
-    ...(settings.localBusinessSchemaEnabled ? [localBusinessSchema(settings)] : []),
+    websiteSchema(settings, config),
+    ...(settings.localBusinessSchemaEnabled ? [localBusinessSchema(settings, config)] : []),
   ];
 }
 
@@ -74,7 +75,7 @@ export function breadcrumbSchema(items: { name: string; url: string }[]): Schema
   };
 }
 
-/** Use only when the questions and answers are visible on the page and approved by the client. */
+/** Use only when every question and answer is visible on the page and final (see siteConfig.faq). */
 export function faqSchema(items: { q: string; a: string }[]): Schema {
   return {
     "@type": "FAQPage",
@@ -88,6 +89,7 @@ export function faqSchema(items: { q: string; a: string }[]): Schema {
 
 export function blogPostingSchema(post: {
   settings: SiteSettings;
+  config: SchemaConfig;
   url: string;
   title: string;
   description?: string | null;
@@ -104,11 +106,9 @@ export function blogPostingSchema(post: {
     image: post.image ? absoluteUrl(settings.siteUrl, post.image) : undefined,
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
-    inLanguage: "he-IL",
+    inLanguage: post.config.locale.bcp47,
     mainEntityOfPage: post.url,
-    author: post.author
-      ? { "@type": "Person", name: post.author }
-      : { "@id": `${settings.siteUrl}/#organization` },
+    author: post.author ? { "@type": "Person", name: post.author } : { "@id": `${settings.siteUrl}/#organization` },
     publisher: { "@id": `${settings.siteUrl}/#organization` },
   };
 }

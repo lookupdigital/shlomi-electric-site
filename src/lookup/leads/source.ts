@@ -11,7 +11,7 @@ type LeadAttribution = {
 };
 
 /** Human-readable source for the leads admin: UTMs first, then ad click IDs, then the referrer. */
-export function leadSource(lead: LeadAttribution): { source: string; campaign: string | null } {
+export function leadSource(lead: LeadAttribution, directLabel: string): { source: string; campaign: string | null } {
   const campaign = lead.utm_campaign ?? null;
   if (lead.utm_source) return { source: [lead.utm_source, lead.utm_medium].filter(Boolean).join(" / "), campaign };
   if (lead.gclid || lead.gbraid || lead.wbraid) return { source: "Google Ads", campaign };
@@ -24,5 +24,5 @@ export function leadSource(lead: LeadAttribution): { source: string; campaign: s
       // ignore malformed referrer
     }
   }
-  return { source: "ישיר / לא ידוע", campaign };
+  return { source: directLabel, campaign };
 }

@@ -1,11 +1,15 @@
 import "server-only";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
-import { composeMetadata, type PageSeoRow } from "@/lookup/seo-model";
+import { composeMetadata } from "@/lookup/seo-model";
 import { getSiteSettings, isIndexable } from "@/lookup/settings";
+import type { Database } from "@/lookup/supabase/database.types";
 import { createPublicClient } from "@/lookup/supabase/public";
+import { siteConfig } from "@/site.config";
 
 export const PAGE_SEO_TAG = "page-seo";
+
+export type PageSeoRow = Database["public"]["Tables"]["page_seo"]["Row"];
 
 const readPageSeo = unstable_cache(
   async (): Promise<PageSeoRow[]> => {
@@ -13,7 +17,7 @@ const readPageSeo = unstable_cache(
     if (!supabase) return [];
     const { data, error } = await supabase.from("page_seo").select("*");
     if (error) throw new Error(`page_seo: ${error.message}`);
-    return (data ?? []) as PageSeoRow[];
+    return data ?? [];
   },
   ["lookup-page-seo"],
   { tags: [PAGE_SEO_TAG], revalidate: 3600 },
@@ -34,6 +38,7 @@ export async function buildPageMetadata(page: { path: string; title?: string; de
   const [settings, seo] = await Promise.all([getSiteSettings(), getAllPageSeo()]);
   return composeMetadata({
     settings,
+    ogLocale: siteConfig.locale.ogLocale,
     path: page.path,
     seo: seo.get(page.path),
     fallbackTitle: page.title,

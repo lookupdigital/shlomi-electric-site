@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { navLinks } from "@/lib/site";
+import type { NavLink } from "@/components/SiteChrome";
 
 type Props = {
   businessName: string;
@@ -7,9 +7,12 @@ type Props = {
   phoneHref: string;
   email: string;
   address: string;
+  links: NavLink[];
 };
 
-export default function Footer({ businessName, phoneDisplay, phoneHref, email, address }: Props) {
+/** Contact items render only when configured in /admin/settings — nothing falls back to demo values. */
+export default function Footer({ businessName, phoneDisplay, phoneHref, email, address, links }: Props) {
+  const hasContact = Boolean(phoneHref || email || address);
   return (
     <footer className="bg-coal text-white">
       <div className="container-x flex flex-col gap-10 pt-16 pb-10 lg:gap-[60px] lg:pt-20">
@@ -18,19 +21,25 @@ export default function Footer({ businessName, phoneDisplay, phoneHref, email, a
             בנייה ושיפוץ מסחרי מקצועי בסטנדרט הגבוה ביותר. מהרעיון ועד למפתח, עם ראש שקט ובטחון מלא.
           </p>
 
-          <div className="flex flex-col items-start gap-3 text-sm">
-            <p className="font-heading text-base font-bold">יצירת קשר</p>
-            <a href={phoneHref} dir="ltr" className="opacity-70 transition-opacity hover:opacity-100">
-              {phoneDisplay}
-            </a>
-            <a href={`mailto:${email}`} className="opacity-70 transition-opacity hover:opacity-100">
-              {email}
-            </a>
-            <p className="opacity-70">{address}</p>
-          </div>
+          {hasContact && (
+            <div className="flex flex-col items-start gap-3 text-sm">
+              <p className="font-heading text-base font-bold">יצירת קשר</p>
+              {phoneHref && (
+                <a href={phoneHref} dir="ltr" className="opacity-70 transition-opacity hover:opacity-100">
+                  {phoneDisplay}
+                </a>
+              )}
+              {email && (
+                <a href={`mailto:${email}`} className="opacity-70 transition-opacity hover:opacity-100">
+                  {email}
+                </a>
+              )}
+              {address && <p className="opacity-70">{address}</p>}
+            </div>
+          )}
 
           <nav className="flex flex-col items-start gap-3 text-sm" aria-label="ניווט תחתון">
-            {navLinks.map((link) => (
+            {links.map((link) => (
               <Link key={link.href} href={link.href} className="opacity-70 transition-opacity hover:opacity-100">
                 {link.label}
               </Link>

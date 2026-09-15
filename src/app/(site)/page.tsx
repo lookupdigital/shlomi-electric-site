@@ -7,9 +7,11 @@ import ProjectCard from "@/components/ProjectCard";
 import Reviews from "@/components/Reviews";
 import Stats from "@/components/Stats";
 import { projects } from "@/lib/site";
+import { faqSchema, JsonLd } from "@/lookup/schema";
 import { buildPageMetadata } from "@/lookup/seo";
 import { getSiteSettings } from "@/lookup/settings";
 import { whatsappHref } from "@/lookup/settings-model";
+import { siteConfig } from "@/site.config";
 
 export function generateMetadata() {
   return buildPageMetadata({ path: "/" });
@@ -47,6 +49,7 @@ const faq = [
 
 export default async function Home() {
   const settings = await getSiteSettings();
+  const whatsapp = whatsappHref(settings.whatsapp, siteConfig.phone);
   return (
     <>
       {/* Hero */}
@@ -64,9 +67,11 @@ export default async function Home() {
                 התכנון ועד למסירת הפרויקט.
               </p>
             </div>
-            <Button href={whatsappHref(settings.whatsapp)} variant="outline" trackCta="hero_whatsapp">
-              שוחחו איתנו ב-WhatsApp
-            </Button>
+            {whatsapp && (
+              <Button href={whatsapp} variant="outline" trackCta="hero_whatsapp">
+                שוחחו איתנו ב-WhatsApp
+              </Button>
+            )}
           </div>
 
           <div className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl px-4 py-10 sm:px-[89px] sm:py-[96px] xl:max-w-[634px] xl:flex-1">
@@ -210,6 +215,7 @@ export default async function Home() {
 
       <Reviews />
 
+      {siteConfig.faq.structuredData && <JsonLd data={faqSchema(faq)} />}
       <Faq items={faq} defaultOpen={[0, 1]} />
 
       <CtaSection

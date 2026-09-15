@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
+import { t } from "@/lookup/admin/i18n";
 import { secondaryButton } from "@/lookup/admin/styles";
 import { ACCEPTED_IMAGE_TYPES, uploadImage } from "@/lookup/media";
 
@@ -14,17 +15,17 @@ export default function ImageField({ label, name, defaultValue, hint, wide }: Pr
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    setStatus({ error: false, text: "מעלה…" });
+    setStatus({ error: false, text: t.media.uploading });
     try {
       setUrl(await uploadImage(file));
-      setStatus({ error: false, text: "התמונה הועלתה — לחצו שמירה כדי לעדכן" });
+      setStatus({ error: false, text: t.media.uploaded });
     } catch (error) {
       setStatus({ error: true, text: (error as Error).message });
     }
   }
 
   return (
-    <div className={`flex flex-col gap-1.5 ${wide ? "md:col-span-2" : ""}`}>
+    <div className={`flex min-w-0 flex-col gap-1.5 ${wide ? "md:col-span-2" : ""}`}>
       <span className="font-heading text-sm font-bold text-ink">{label}</span>
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -32,12 +33,12 @@ export default function ImageField({ label, name, defaultValue, hint, wide }: Pr
           value={url}
           onChange={(event) => setUrl(event.target.value)}
           dir="ltr"
-          placeholder="https://…supabase.co/storage/… או /images/…"
+          placeholder={t.media.placeholder}
           className="field min-w-0 flex-1"
           aria-label={label}
         />
         <label className={`${secondaryButton} cursor-pointer`}>
-          העלאה
+          {t.media.upload}
           <input type="file" accept={ACCEPTED_IMAGE_TYPES.join(",")} className="sr-only" onChange={onFile} />
         </label>
       </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DEFAULT_OG_IMAGE } from "@/lookup/config";
 import { absoluteUrl, type SiteSettings } from "@/lookup/settings-model";
 
 export type SeoFields = {
@@ -12,10 +13,12 @@ export type SeoFields = {
   robots_follow?: boolean | null;
 };
 
-export type PageSeoRow = SeoFields & { path: string; updated_at: string };
+export const RECOMMENDED_LENGTH = { metaTitle: 60, metaDescription: 160 } as const;
 
 type ComposeInput = {
   settings: SiteSettings;
+  /** Open Graph locale, e.g. "he_IL". */
+  ogLocale: string;
   path: string;
   seo?: SeoFields;
   /** Title from code, rendered as "<title> | <site name>". */
@@ -33,7 +36,7 @@ type ComposeInput = {
  *   title       = SEO meta title → "<code title> | <site name>" → default meta title → site name
  *   description = SEO meta description → code description → default meta description
  *   canonical   = SEO canonical → site URL + path
- *   OG          = SEO OG fields → resolved title/description; image → SEO OG image → fallback → default OG image
+ *   OG image    = SEO OG image → page image → default OG image setting → generated default (1200×630)
  *   robots      = global indexability AND the page's own index/follow flags
  */
 export function composeMetadata(input: ComposeInput): Metadata {
@@ -46,8 +49,10 @@ export function composeMetadata(input: ComposeInput): Metadata {
   const description =
     seo?.meta_description?.trim() || input.fallbackDescription || settings.defaultMetaDescription || undefined;
   const canonical = seo?.canonical_url?.trim() || absoluteUrl(settings.siteUrl, input.path);
-  const imagePath = seo?.og_image_url?.trim() || input.fallbackImage || settings.defaultOgImageUrl;
-  const image = imagePath ? absoluteUrl(settings.siteUrl, imagePath) : undefined;
+  const customImage = seo?.og_image_url?.trim() || input.fallbackImage || settings.defaultOgImageUrl;
+  const image = customImage
+    ? { url: absoluteUrl(settings.siteUrl, customImage) }
+    : { url: absoluteUrl(settings.siteUrl, DEFAULT_OG_IMAGE.path), width: DEFAULT_OG_IMAGE.width, height: DEFAULT_OG_IMAGE.height };
   const ogTitle = seo?.og_title?.trim() || title;
   const ogDescription = seo?.og_description?.trim() || description;
 
@@ -61,21 +66,28 @@ export function composeMetadata(input: ComposeInput): Metadata {
     },
     openGraph: {
       type: input.type ?? "website",
-      locale: "he_IL",
+      locale: input.ogLocale,
       siteName: settings.siteName,
       url: canonical,
       title: ogTitle,
       description: ogDescription,
-      images: image ? [{ url: image }] : undefined,
-      ...(input.type === "article"
-        ? { publishedTime: input.publishedTime, modifiedTime: input.modifiedTime }
-        : {}),
+      images: [image],
+      ...(input.type === "article" ? { publishedTime: input.publishedTime, modifiedTime: input.modifiedTime } : {}),
     },
     twitter: {
-      card: image ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title: ogTitle,
       description: ogDescription,
-      images: image ? [image] : undefined,
+      images: [image.url],
     },
   };
+}
+
+/** Latest updated_at of the given rows (ISO strings compare chronologically only after parsing). */
+export function latestTimestamp(rows: { updated_at: string }[]): string | undefined {
+  let latest: string | undefined;
+  for (const row of rows) {
+    if (!latest || new Date(row.updated_at).getTime() > new Date(latest).getTime()) latest = row.updated_at;
+  }
+  return latest;
 }

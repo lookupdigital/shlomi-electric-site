@@ -5,16 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import Button from "@/components/Button";
-import { navLinks } from "@/lib/site";
+import type { NavLink } from "@/components/SiteChrome";
 
 type Props = {
   siteName: string;
   logoUrl: string;
   phoneDisplay: string;
+  /** Empty when no phone number is configured — the phone link is then hidden. */
   phoneHref: string;
+  links: NavLink[];
 };
 
-export default function Header({ siteName, logoUrl, phoneDisplay, phoneHref }: Props) {
+export default function Header({ siteName, logoUrl, phoneDisplay, phoneHref, links }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
@@ -27,7 +29,7 @@ export default function Header({ siteName, logoUrl, phoneDisplay, phoneHref }: P
             <Image src={logoUrl} alt={siteName} width={30} height={38} priority className="h-[38px] w-auto" />
           </Link>
           <nav className="hidden items-center gap-8 font-heading text-[15px] font-semibold text-ink md:flex">
-            {navLinks.map((link) => (
+            {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -41,10 +43,12 @@ export default function Header({ siteName, logoUrl, phoneDisplay, phoneHref }: P
         </div>
 
         <div className="hidden items-center gap-6 md:flex">
-          <a href={phoneHref} className="flex items-center gap-2 font-heading text-base font-bold text-ink">
-            <Image src="/icons/phone.svg" alt="" width={18} height={18} />
-            <span dir="ltr">{phoneDisplay}</span>
-          </a>
+          {phoneHref && (
+            <a href={phoneHref} className="flex items-center gap-2 font-heading text-base font-bold text-ink">
+              <Image src="/icons/phone.svg" alt="" width={18} height={18} />
+              <span dir="ltr">{phoneDisplay}</span>
+            </a>
+          )}
           <Button href="/contact#contact-form" className="w-[166px]" trackCta="header_quote">
             קבלו הצעת מחיר
           </Button>
@@ -67,7 +71,7 @@ export default function Header({ siteName, logoUrl, phoneDisplay, phoneHref }: P
       {open && (
         <div id="mobile-menu" className="border-t border-line bg-white md:hidden">
           <nav className="container-x flex flex-col gap-1 py-4 font-heading text-lg font-semibold text-ink">
-            {navLinks.map((link) => (
+            {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -78,10 +82,12 @@ export default function Header({ siteName, logoUrl, phoneDisplay, phoneHref }: P
                 {link.label}
               </Link>
             ))}
-            <a href={phoneHref} className="flex items-center gap-2 py-3 font-bold">
-              <Image src="/icons/phone.svg" alt="" width={18} height={18} />
-              <span dir="ltr">{phoneDisplay}</span>
-            </a>
+            {phoneHref && (
+              <a href={phoneHref} className="flex items-center gap-2 py-3 font-bold">
+                <Image src="/icons/phone.svg" alt="" width={18} height={18} />
+                <span dir="ltr">{phoneDisplay}</span>
+              </a>
+            )}
             <div onClick={close} className="pt-2">
               <Button href="/contact#contact-form" className="w-full" trackCta="mobile_menu_quote">
                 קבלו הצעת מחיר

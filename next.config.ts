@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
+import { getSiteEnvironment } from "./src/lookup/runtime";
+import { buildAdminCsp, buildPublicCsp, supabaseOriginFrom } from "./src/lookup/security/csp";
 
-// VERCEL_ENV is available at build time on Vercel ("production" | "preview"); undefined locally.
-const isProductionDeployment = process.env.VERCEL_ENV === "production";
+// Evaluated at build time. LOOKUP_SITE_ENV (any host) or VERCEL_ENV decides the environment.
+const isProductionSite = getSiteEnvironment() === "production";
+const cspOptions = {
+  development: process.env.NODE_ENV === "development",
+  supabaseOrigin: supabaseOriginFrom(process.env.NEXT_PUBLIC_SUPABASE_URL),
+};
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -20,15 +26,17 @@ const nextConfig: NextConfig = {
         source: "/((?!admin).*)",
         headers: [
           ...securityHeaders,
+          { key: "Content-Security-Policy", value: buildPublicCsp(cspOptions) },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           // Preview and local builds must never be indexed.
-          ...(isProductionDeployment ? [] : [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]),
+          ...(isProductionSite ? [] : [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]),
         ],
       },
       {
         source: "/admin/:path*",
         headers: [
           ...securityHeaders,
+          { key: "Content-Security-Policy", value: buildAdminCsp(cspOptions) },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],

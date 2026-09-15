@@ -10,32 +10,7 @@ const migrations = readdirSync(migrationsDir)
   .filter((file) => file.endsWith(".sql"))
   .sort()
   .map((file) => readFileSync(join(migrationsDir, file), "utf8"));
-
-const SUPABASE_STUB = `
-  create role anon nologin;
-  create role authenticated nologin;
-  create role service_role nologin bypassrls;
-  grant usage on schema public to anon, authenticated, service_role;
-
-  create schema auth;
-  create table auth.users (id uuid primary key, email text);
-  create function auth.uid() returns uuid language sql stable as
-    $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-  grant usage on schema auth to anon, authenticated, service_role;
-  grant execute on function auth.uid() to anon, authenticated, service_role;
-
-  create schema storage;
-  create table storage.buckets (
-    id text primary key, name text not null, public boolean default false,
-    file_size_limit bigint, allowed_mime_types text[]
-  );
-  create table storage.objects (
-    id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets (id), name text
-  );
-  alter table storage.objects enable row level security;
-  grant usage on schema storage to anon, authenticated, service_role;
-  grant select, insert, update, delete on storage.objects to anon, authenticated;
-`;
+const SUPABASE_STUB = readFileSync(join(process.cwd(), "supabase", "tests", "supabase-stub.sql"), "utf8");
 
 const ADMIN = "00000000-0000-0000-0000-00000000000a";
 const USER = "00000000-0000-0000-0000-00000000000b";
@@ -56,6 +31,9 @@ async function as<T>(db: PGlite, role: "anon" | "authenticated" | "service_role"
   }
 }
 
+const insertLead = (submissionId: string) =>
+  `insert into public.leads (name, phone, form_name, submission_id, utm_source, gclid) values ('Test', '0500000000', 'contact', '${submissionId}', 'google', 'abc') returning id`;
+
 describe("Lookup migrations", () => {
   let db: PGlite;
 
@@ -74,12 +52,16 @@ describe("Lookup migrations", () => {
     `);
   });
 
-  it("aborts without changes when a Lookup table already exists", async () => {
+  it("the first migration aborts without changes when a Lookup table already exists", async () => {
     const other = await freshDatabase();
     await other.exec("create table public.leads (id int);");
     await expect(other.exec(migrations[0])).rejects.toThrow(/Lookup migration aborted/);
     const { rows } = await other.query("select to_regclass('public.admin_users') as t");
     expect(rows[0]).toEqual({ t: null });
+  });
+
+  it("the hardening migration refuses to run twice", async () => {
+    await expect(db.exec(migrations[migrations.length - 1])).rejects.toThrow(/already applied/);
   });
 
   it("anon cannot read or insert leads", async () => {
@@ -89,16 +71,43 @@ describe("Lookup migrations", () => {
     ).rejects.toThrow(/permission denied/);
   });
 
-  it("service role inserts leads; submission_id is unique", async () => {
-    const sql =
-      "insert into public.leads (name, phone, form_name, submission_id, utm_source, gclid) values ('Test', '0500000000', 'contact', '11111111-1111-1111-1111-111111111111', 'google', 'abc')";
-    await as(db, "service_role", null, sql);
-    await expect(as(db, "service_role", null, sql)).rejects.toThrow(/duplicate key/);
+  it("service role inserts leads with workflow defaults; submission_id is unique", async () => {
+    const rows = await as<{ id: string }>(db, "service_role", null, insertLead("11111111-1111-1111-1111-111111111111"));
+    const { rows: stored } = await db.query<{ status: string; is_test: boolean; notification_status: string }>(
+      `select status, is_test, notification_status from public.leads where id = '${rows[0].id}'`,
+    );
+    expect(stored[0]).toEqual({ status: "new", is_test: false, notification_status: "skipped" });
+    await expect(as(db, "service_role", null, insertLead("11111111-1111-1111-1111-111111111111"))).rejects.toThrow(/duplicate key/);
   });
 
   it("only admins can read leads", async () => {
     expect(await as(db, "authenticated", USER, "select id from public.leads")).toHaveLength(0);
-    expect(await as(db, "authenticated", ADMIN, "select id from public.leads")).toHaveLength(1);
+    expect((await as(db, "authenticated", ADMIN, "select id from public.leads")).length).toBeGreaterThan(0);
+  });
+
+  it("admins can change a lead's status but not its submitted data", async () => {
+    expect(await as(db, "authenticated", ADMIN, "update public.leads set status = 'contacted' returning id")).not.toHaveLength(0);
+    await expect(as(db, "authenticated", ADMIN, "update public.leads set name = 'changed'")).rejects.toThrow(/permission denied/);
+    expect(await as(db, "authenticated", USER, "update public.leads set status = 'spam' returning id")).toHaveLength(0);
+    await expect(db.exec("update public.leads set status = 'archived'")).rejects.toThrow(/leads_status_check/);
+  });
+
+  it("only admins can delete leads (privacy requests)", async () => {
+    const [{ id }] = await as<{ id: string }>(db, "service_role", null, insertLead("22222222-2222-2222-2222-222222222222"));
+    await expect(as(db, "anon", null, `delete from public.leads where id = '${id}'`)).rejects.toThrow(/permission denied/);
+    expect(await as(db, "authenticated", USER, `delete from public.leads where id = '${id}' returning id`)).toHaveLength(0);
+    expect(await as(db, "authenticated", ADMIN, `delete from public.leads where id = '${id}' returning id`)).toHaveLength(1);
+  });
+
+  it("the lead rate limit is server-only and enforces the limit per bucket", async () => {
+    const call = (bucket: string) => `select public.lead_rate_limit_consume('${bucket}', 2, 60) as allowed`;
+    await expect(as(db, "anon", null, call("x"))).rejects.toThrow(/permission denied/);
+    await expect(as(db, "authenticated", ADMIN, call("x"))).rejects.toThrow(/permission denied/);
+    await expect(as(db, "anon", null, "select * from public.lead_rate_limits")).rejects.toThrow(/permission denied/);
+    const results = [];
+    for (let i = 0; i < 3; i++) results.push((await as<{ allowed: boolean }>(db, "service_role", null, call("bucket-a")))[0].allowed);
+    expect(results).toEqual([true, true, false]);
+    expect((await as<{ allowed: boolean }>(db, "service_role", null, call("bucket-b")))[0].allowed).toBe(true);
   });
 
   it("public sees only published, already-live posts", async () => {
@@ -108,18 +117,10 @@ describe("Lookup migrations", () => {
   });
 
   it("non-admins cannot write content; admins can", async () => {
-    await expect(as(db, "anon", null, "update public.site_settings set site_name = 'x'")).rejects.toThrow(
-      /permission denied/,
-    );
-    expect(
-      await as(db, "authenticated", USER, "update public.site_settings set site_name = 'hacked' returning id"),
-    ).toHaveLength(0);
-    expect(
-      await as(db, "authenticated", ADMIN, "update public.site_settings set site_name = 'ok' returning id"),
-    ).toHaveLength(1);
-    await expect(
-      as(db, "authenticated", USER, "insert into public.posts (title, slug) values ('x', 'x')"),
-    ).rejects.toThrow(/row-level security/);
+    await expect(as(db, "anon", null, "update public.site_settings set site_name = 'x'")).rejects.toThrow(/permission denied/);
+    expect(await as(db, "authenticated", USER, "update public.site_settings set site_name = 'hacked' returning id")).toHaveLength(0);
+    expect(await as(db, "authenticated", ADMIN, "update public.site_settings set site_name = 'ok' returning id")).toHaveLength(1);
+    await expect(as(db, "authenticated", USER, "insert into public.posts (title, slug) values ('x', 'x')")).rejects.toThrow(/row-level security/);
   });
 
   it("public reads settings and only active redirects", async () => {
@@ -129,26 +130,19 @@ describe("Lookup migrations", () => {
   });
 
   it("enforces data constraints", async () => {
-    await expect(
-      db.exec("insert into public.redirects (source_path, destination, status_code) values ('/a', '/b', 307)"),
-    ).rejects.toThrow(/check constraint/);
-    await expect(
-      db.exec("insert into public.posts (title, slug, status) values ('x', 'no-date', 'published')"),
-    ).rejects.toThrow(/posts_published_requires_date/);
-    await expect(db.exec("insert into public.posts (title, slug) values ('x', 'Bad Slug')")).rejects.toThrow(
-      /check constraint/,
-    );
-    await db.exec("insert into public.posts (title, slug) values ('עברית', 'מאמר-ראשון')");
+    await expect(db.exec("insert into public.redirects (source_path, destination, status_code) values ('/a', '/b', 307)")).rejects.toThrow(/check constraint/);
+    await expect(db.exec("insert into public.posts (title, slug, status) values ('x', 'no-date', 'published')")).rejects.toThrow(/posts_published_requires_date/);
+    for (const slug of ["Bad-Slug", "bad slug", "a/b", "a--b"]) {
+      await expect(db.exec(`insert into public.posts (title, slug) values ('x', '${slug}')`)).rejects.toThrow(/posts_slug_check/);
+    }
+    await db.exec("insert into public.posts (title, slug) values ('עברית', 'מאמר-ראשון'), ('latin', 'first-post-2')");
     await expect(db.exec("update public.site_settings set gtm_id = 'UA-123'")).rejects.toThrow(/check constraint/);
+    await expect(db.exec("update public.site_settings set consent_default = 'maybe'")).rejects.toThrow(/site_settings_consent_default_check/);
     await expect(db.exec("insert into public.site_settings (id) values (2)")).rejects.toThrow(/site_settings_singleton/);
   });
 
   it("only admins can upload to the media bucket", async () => {
-    await expect(
-      as(db, "authenticated", USER, "insert into storage.objects (bucket_id, name) values ('media', 'a.png')"),
-    ).rejects.toThrow(/row-level security/);
-    expect(
-      await as(db, "authenticated", ADMIN, "insert into storage.objects (bucket_id, name) values ('media', 'a.png') returning id"),
-    ).toHaveLength(1);
+    await expect(as(db, "authenticated", USER, "insert into storage.objects (bucket_id, name) values ('media', 'a.png')")).rejects.toThrow(/row-level security/);
+    expect(await as(db, "authenticated", ADMIN, "insert into storage.objects (bucket_id, name) values ('media', 'a.png') returning id")).toHaveLength(1);
   });
 });

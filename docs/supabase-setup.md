@@ -1,75 +1,74 @@
-# Supabase Setup — project `shlomiboaron` (ap-northeast-1)
+# Supabase setup — project `shlomiboaron` (ap-northeast-1)
 
-One Supabase project is used for local development, Vercel Preview and Vercel Production during the MVP.
-Do not create another project and do not change the region.
+One Supabase project serves local development, Vercel Preview and Vercel Production. Do not create another project
+and do not change the region.
 
 ## 1. Environment variables
 
-Supabase Dashboard → project **shlomiboaron** → **Project Settings → API Keys** (or **Data API**):
+Supabase Dashboard → project **shlomiboaron** → **Project Settings → API Keys**:
 
 | Copy | Paste as |
 | --- | --- |
-| Project URL (`https://<ref>.supabase.co`) | `NEXT_PUBLIC_SUPABASE_URL` |
+| Project URL (`https://<ref>.supabase.co` — include `https://`) | `NEXT_PUBLIC_SUPABASE_URL` |
 | `anon` / publishable key | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
 | `service_role` / secret key (click **Reveal**) | `SUPABASE_SERVICE_ROLE_KEY` |
 
-- **Local:** fill in `.env.local` in the repository root (git-ignored), then restart `npm run dev`.
-- **Vercel:** Project → **Settings → Environment Variables**. Add all three for **Production** and **Preview**
-  (and Development if you use `vercel dev`). Mark `SUPABASE_SERVICE_ROLE_KEY` as **Sensitive**. Never create a
-  `NEXT_PUBLIC_` copy of it. Redeploy afterwards (`NEXT_PUBLIC_*` values are baked in at build time).
+Optional variables (lead webhook, Turnstile, admin host, environment) are documented in `.env.example`.
 
-## 2. Inspect before migrating (read-only)
+- **Local:** `.env.local` in the repository root (git-ignored); restart the server after changes.
+- **Vercel:** Project → **Settings → Environment Variables** → add for **Production** and **Preview**. Mark
+  `SUPABASE_SERVICE_ROLE_KEY`, `TURNSTILE_SECRET_KEY`, `LEAD_WEBHOOK_SECRET` and `LEAD_RATE_LIMIT_SALT` as **Sensitive**.
+  Redeploy afterwards (`NEXT_PUBLIC_*` values are baked in at build time).
 
-Run the inspection query from the chat / plan in **SQL Editor** first. The first migration also aborts, changing
-nothing, if any of `admin_users, site_settings, page_seo, posts, leads, redirects` already exists.
+## 2. Migrations
 
-## 3. Apply migrations
-
-**SQL Editor → New query**, paste each file's full contents and **Run**, strictly in this order:
+**SQL Editor → New query** → paste each file's full contents → **Run**, strictly in order:
 
 1. `supabase/migrations/20260915130000_lookup_foundation.sql`
 2. `supabase/migrations/20260915130100_lookup_content.sql`
 3. `supabase/migrations/20260915130200_lookup_leads.sql`
 4. `supabase/migrations/20260915130300_lookup_media_storage.sql`
+5. `supabase/migrations/20260916090000_lookup_hardening.sql` — lead status / test flag / notification state,
+   admin update & delete, rate limiting, Consent Mode default, generalized blog slugs.
 
-Each file runs as a single transaction — if it errors, nothing from that file is applied.
-All four are additive: no drops, no data changes to existing objects.
+Each migration aborts without changes if it has already been applied (or, for 5, if 1–4 are missing). All are
+additive. For certainty in the SQL Editor, wrap a paste in `begin;` … `commit;`.
 
-> Later, if the Supabase CLI is linked, mark these as applied so they are not replayed:
-> `npx supabase migration repair --status applied 20260915130000 20260915130100 20260915130200 20260915130300`
+After schema changes in code, regenerate types: `npm run db:types` (CI fails if they are out of date).
 
-## 4. Auth settings
+> If the Supabase CLI is linked later, mark these as applied so they are not replayed:
+> `npx supabase migration repair --status applied 20260915130000 20260915130100 20260915130200 20260915130300 20260916090000`
 
+### One-time client seed (this site only)
+`supabase/seeds/initial-site-settings.sql` copies the contact details the site showed before (still the Figma demo
+values) into the settings row, filling only empty fields. Run it once after migration 5 so the header and footer
+keep their current content until real details are entered in the admin.
+
+## 3. Auth settings
 **Authentication → Sign In / Providers**
 - Email provider: enabled.
-- **Allow new users to sign up: OFF** (admins are created manually; admin access additionally requires the allowlist).
+- **Allow new users to sign up: OFF.**
 
 **Authentication → URL Configuration**
-- Site URL: the production URL (e.g. `https://shlomi-electric-site.vercel.app` until the real domain exists).
-- Redirect URLs: add `http://localhost:3000/**` and the production URL with `/**`.
+- Site URL: the production URL. Redirect URLs: `http://localhost:3000/**` and the production URL with `/**`.
 
-## 5. Create the first admin
+Verify with `npm run check:supabase` (read-only; fails if sign-up is enabled or private tables are publicly readable).
 
-1. **Authentication → Users → Add user → Create new user**: email + strong password, tick **Auto Confirm User**.
-2. **SQL Editor**, replacing the email:
+## 4. Admins
+1. **Authentication → Users → Add user → Create new user** (email + strong password, tick **Auto Confirm User**).
+2. SQL Editor:
+   ```sql
+   insert into public.admin_users (user_id) select id from auth.users where email = 'admin@example.com';
+   ```
+3. Sign in at `/admin/login`. Sessions last 12 hours of inactivity (HttpOnly cookie scoped to `/admin`).
 
-```sql
-insert into public.admin_users (user_id)
-select id from auth.users where email = 'admin@example.com';
-```
-
-3. Sign in at `/admin/login`.
+After upgrading from a version before the hardening pass, every admin must sign in again once (the old
+JavaScript-readable cookies are ignored and deleted automatically).
 
 To remove an admin: `delete from public.admin_users where user_id = (select id from auth.users where email = '…');`
 
-## 6. How the pieces use Supabase
-
-| Area | Key | Access |
-| --- | --- | --- |
-| Public pages (settings, page SEO, published posts, active redirects) | anon | RLS: read-only, published/active rows only |
-| Admin pages & actions | anon + admin session cookie | RLS: writes require `public.is_admin()` |
-| Image uploads (admin) | anon + session, from the browser | Storage policies: `media` bucket, admins only, images ≤ 5 MB, no SVG |
-| Lead form submissions | **service role**, server-only (`src/lookup/supabase/service.ts`) | Inserts only; no public read or write on `leads` |
-
-`npm run check:secrets` (after `npm run build`) fails if the service role key or its variable name appears in any
-browser-facing build output.
+## 5. Test data
+Automated tests store leads with `is_test = true` (hidden from the admin, exports and notifications). Remove them with:
+```sql
+delete from public.leads where is_test;
+```

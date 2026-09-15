@@ -1,81 +1,95 @@
 import type { Metadata } from "next";
-import { siteDefaults } from "@/lib/site";
 import { saveSiteSettings } from "@/lookup/admin/actions/settings";
 import AdminForm from "@/lookup/admin/AdminForm";
+import CountedField from "@/lookup/admin/CountedField";
+import { t } from "@/lookup/admin/i18n";
 import ImageField from "@/lookup/admin/ImageField";
-import { CheckboxField, Fieldset, Notice, PageHeader, TextAreaField, TextField } from "@/lookup/admin/ui";
+import { Badge, CheckboxField, Fieldset, Notice, PageHeader, SelectField, TextField, type Tone } from "@/lookup/admin/ui";
 import { requireAdmin } from "@/lookup/auth";
-import type { SiteSettingsRow } from "@/lookup/settings-model";
+import { isGtmAllowed } from "@/lookup/runtime";
+import { RECOMMENDED_LENGTH } from "@/lookup/seo-model";
+import { siteConfig } from "@/site.config";
 
-export const metadata: Metadata = { title: "הגדרות אתר" };
+export const metadata: Metadata = { title: t.settings.title };
+
+const s = t.settings;
+
+/** What a tracking ID actually does on the live site — IDs other than GTM do nothing without GTM tags. */
+function trackingStatus(value: string | null | undefined, kind: "gtm" | "tag", gtmId: string | null | undefined): { label: string; tone: Tone } {
+  if (!value) return { label: s.status.notConfigured, tone: "muted" };
+  if (kind === "gtm") return isGtmAllowed() ? { label: s.status.active, tone: "success" } : { label: s.status.gtmNotInProduction, tone: "warning" };
+  return gtmId ? { label: s.status.requiresGtmTag, tone: "warning" } : { label: s.status.requiresGtm, tone: "error" };
+}
 
 export default async function SettingsPage() {
   const { supabase } = await requireAdmin();
-  const { data, error } = await supabase.from("site_settings").select("*").eq("id", 1).maybeSingle();
-  const s = (data ?? {}) as Partial<SiteSettingsRow>;
+  const { data: row, error } = await supabase.from("site_settings").select("*").eq("id", 1).maybeSingle();
+
+  const trackingField = (label: string, name: "gtm_id" | "ga4_id" | "meta_pixel_id" | "tiktok_pixel_id" | "linkedin_partner_id", placeholder?: string) => {
+    const status = trackingStatus(row?.[name], name === "gtm_id" ? "gtm" : "tag", row?.gtm_id);
+    return (
+      <TextField label={label} name={name} defaultValue={row?.[name]} dir="ltr" placeholder={placeholder} extra={<Badge tone={status.tone}>{status.label}</Badge>} />
+    );
+  };
 
   return (
     <>
-      <PageHeader title="הגדרות אתר" description="שדה ריק = ערך ברירת המחדל שמופיע כ-placeholder (מהקוד)." />
-      {error && <Notice tone="error">טעינת ההגדרות נכשלה: {error.message}</Notice>}
+      <PageHeader title={s.title} description={s.description} />
+      {error && <Notice tone="error">{t.common.loadFailed(error.message)}</Notice>}
 
-      <AdminForm action={saveSiteSettings} submitLabel="שמירת ההגדרות">
-        <Fieldset legend="פרטי העסק">
-          <TextField label="שם העסק" name="business_name" defaultValue={s.business_name} placeholder={siteDefaults.businessName} />
-          <TextField label="שם האתר" name="site_name" defaultValue={s.site_name} placeholder={siteDefaults.siteName} />
-          <TextField
-            label="כתובת האתר (דומיין ראשי)"
-            name="site_url"
-            defaultValue={s.site_url}
-            dir="ltr"
-            placeholder="https://www.example.co.il"
-            hint="משמשת ל-canonical, sitemap ו-Open Graph. ריק = כתובת הפרודקשן של Vercel."
-          />
-          <TextField label="טלפון" name="phone" defaultValue={s.phone} dir="ltr" placeholder={siteDefaults.phone} />
-          <TextField label="WhatsApp" name="whatsapp" defaultValue={s.whatsapp} dir="ltr" placeholder={siteDefaults.whatsapp} />
-          <TextField label="אימייל" name="email" defaultValue={s.email} dir="ltr" placeholder={siteDefaults.email} />
-          <TextField label="כתובת" name="address" defaultValue={s.address} placeholder={siteDefaults.address} wide />
-          <ImageField label="לוגו" name="logo_url" defaultValue={s.logo_url} hint={`ריק = ${siteDefaults.logoUrl}`} />
-          <ImageField label="Favicon" name="favicon_url" defaultValue={s.favicon_url} hint="PNG/ICO ריבועי. ריק = favicon.ico הקיים." />
-          <CheckboxField
-            label="פרטי העסק אומתו — הצג LocalBusiness בנתונים מובנים"
-            name="local_business_schema_enabled"
-            defaultChecked={s.local_business_schema_enabled}
-            hint="להפעיל רק אחרי שהטלפון, הכתובת והאימייל האמיתיים הוזנו."
-          />
+      <AdminForm action={saveSiteSettings} submitLabel={s.submit}>
+        <Fieldset legend={s.business}>
+          <TextField label={s.businessName} name="business_name" defaultValue={row?.business_name} required maxLength={200} />
+          <TextField label={s.siteName} name="site_name" defaultValue={row?.site_name} required maxLength={200} placeholder={siteConfig.identity.siteName} />
+          <TextField label={s.siteUrl} name="site_url" defaultValue={row?.site_url} dir="ltr" placeholder="https://www.example.com" hint={s.siteUrlHint} />
+          <TextField label={s.phone} name="phone" defaultValue={row?.phone} dir="ltr" maxLength={40} />
+          <TextField label={s.whatsapp} name="whatsapp" defaultValue={row?.whatsapp} dir="ltr" hint={s.whatsappHint} />
+          <TextField label={s.email} name="email" defaultValue={row?.email} dir="ltr" />
+          <TextField label={s.address} name="address" defaultValue={row?.address} maxLength={300} wide />
+          <ImageField label={s.logo} name="logo_url" defaultValue={row?.logo_url} hint={s.logoHint} />
+          <ImageField label={s.favicon} name="favicon_url" defaultValue={row?.favicon_url} hint={s.faviconHint} />
+          <CheckboxField label={s.localBusiness} name="local_business_schema_enabled" defaultChecked={row?.local_business_schema_enabled} hint={s.localBusinessHint} />
         </Fieldset>
 
-        <Fieldset legend="רשתות חברתיות">
-          <TextField label="Facebook" name="facebook_url" defaultValue={s.facebook_url} dir="ltr" placeholder="https://facebook.com/…" />
-          <TextField label="Instagram" name="instagram_url" defaultValue={s.instagram_url} dir="ltr" placeholder="https://instagram.com/…" />
-          <TextField label="LinkedIn" name="linkedin_url" defaultValue={s.linkedin_url} dir="ltr" placeholder="https://linkedin.com/…" />
-          <TextField label="TikTok" name="tiktok_url" defaultValue={s.tiktok_url} dir="ltr" placeholder="https://tiktok.com/@…" />
-          <TextField label="YouTube" name="youtube_url" defaultValue={s.youtube_url} dir="ltr" placeholder="https://youtube.com/…" />
+        <Fieldset legend={s.social}>
+          <TextField label="Facebook" name="facebook_url" defaultValue={row?.facebook_url} dir="ltr" placeholder="https://facebook.com/…" />
+          <TextField label="Instagram" name="instagram_url" defaultValue={row?.instagram_url} dir="ltr" placeholder="https://instagram.com/…" />
+          <TextField label="LinkedIn" name="linkedin_url" defaultValue={row?.linkedin_url} dir="ltr" placeholder="https://linkedin.com/…" />
+          <TextField label="TikTok" name="tiktok_url" defaultValue={row?.tiktok_url} dir="ltr" placeholder="https://tiktok.com/@…" />
+          <TextField label="YouTube" name="youtube_url" defaultValue={row?.youtube_url} dir="ltr" placeholder="https://youtube.com/…" />
         </Fieldset>
 
-        <Fieldset legend="SEO כללי">
-          <TextField label="Meta title ברירת מחדל" name="default_meta_title" defaultValue={s.default_meta_title} placeholder={siteDefaults.siteName} wide />
-          <TextAreaField
-            label="Meta description ברירת מחדל"
+        <Fieldset legend={s.seo}>
+          <CountedField label={s.defaultMetaTitle} name="default_meta_title" defaultValue={row?.default_meta_title} recommended={RECOMMENDED_LENGTH.metaTitle} maxLength={200} wide />
+          <CountedField
+            label={s.defaultMetaDescription}
             name="default_meta_description"
-            defaultValue={s.default_meta_description}
-            placeholder={siteDefaults.defaultMetaDescription}
+            defaultValue={row?.default_meta_description}
+            recommended={RECOMMENDED_LENGTH.metaDescription}
+            maxLength={500}
+            multiline
           />
-          <ImageField label="תמונת שיתוף ברירת מחדל (OG)" name="default_og_image_url" defaultValue={s.default_og_image_url} hint="מומלץ 1200×630." />
-          <CheckboxField
-            label="לאפשר אינדוקס במנועי חיפוש"
-            name="indexing_enabled"
-            defaultChecked={s.indexing_enabled}
-            hint="כבוי = כל העמודים noindex. פועל רק בפריסת Production — Preview ופיתוח לעולם אינם מאונדקסים."
+          <ImageField label={s.defaultOgImage} name="default_og_image_url" defaultValue={row?.default_og_image_url} hint={s.defaultOgImageHint} />
+          <CheckboxField label={s.indexing} name="indexing_enabled" defaultChecked={row?.indexing_enabled} hint={s.indexingHint} />
+          <SelectField
+            label={s.consentDefault}
+            name="consent_default"
+            defaultValue={row?.consent_default ?? "granted"}
+            options={[
+              { value: "granted", label: s.consentGranted },
+              { value: "denied", label: s.consentDenied },
+            ]}
+            hint={s.consentHint}
+            wide
           />
         </Fieldset>
 
-        <Fieldset legend="מעקב ופיקסלים" description="מזהים ציבוריים בלבד. GTM נטען רק בפרודקשן; שאר המזהים נחשפים ל-GTM כמשתני dataLayer.">
-          <TextField label="Google Tag Manager ID" name="gtm_id" defaultValue={s.gtm_id} dir="ltr" placeholder="GTM-XXXXXXX" />
-          <TextField label="GA4 Measurement ID" name="ga4_id" defaultValue={s.ga4_id} dir="ltr" placeholder="G-XXXXXXXXXX" />
-          <TextField label="Meta Pixel ID" name="meta_pixel_id" defaultValue={s.meta_pixel_id} dir="ltr" />
-          <TextField label="TikTok Pixel ID" name="tiktok_pixel_id" defaultValue={s.tiktok_pixel_id} dir="ltr" />
-          <TextField label="LinkedIn Partner ID" name="linkedin_partner_id" defaultValue={s.linkedin_partner_id} dir="ltr" />
+        <Fieldset legend={s.tracking} description={s.trackingDescription}>
+          {trackingField(s.gtm, "gtm_id", "GTM-XXXXXXX")}
+          {trackingField(s.ga4, "ga4_id", "G-XXXXXXXXXX")}
+          {trackingField(s.metaPixel, "meta_pixel_id")}
+          {trackingField(s.tiktokPixel, "tiktok_pixel_id")}
+          {trackingField(s.linkedinPartner, "linkedin_partner_id")}
         </Fieldset>
       </AdminForm>
     </>
