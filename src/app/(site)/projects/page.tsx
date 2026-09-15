@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
 import Image from "next/image";
 import CtaSection from "@/components/CtaSection";
 import ProjectCard from "@/components/ProjectCard";
 import Reviews from "@/components/Reviews";
 import Stats from "@/components/Stats";
 import { projects } from "@/lib/site";
+import { buildPageMetadata } from "@/lookup/seo";
 
-export const metadata: Metadata = {
-  title: "פרויקטים",
-};
+export function generateMetadata() {
+  return buildPageMetadata({ path: "/projects", title: "פרויקטים" });
+}
 
 const collage = [
   { src: "/images/projects-hero-3.png", alt: "וילה עם בריכה בתאורת ערב" },
@@ -67,6 +67,7 @@ export default function ProjectsPage() {
 
       <CtaSection
         id="quote-form"
+        formName="projects_cta"
         title="רוצים לראות איך הפרויקט שלכם יכול להיראות?"
         subtitle="נשמח להגיע, להבין את הצרכים שלכם ולהציע פתרון מקצועי שמתאים בדיוק אליכם."
       />

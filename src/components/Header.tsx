@@ -5,9 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import Button from "@/components/Button";
-import { navLinks, site } from "@/lib/site";
+import { navLinks } from "@/lib/site";
 
-export default function Header() {
+type Props = {
+  siteName: string;
+  logoUrl: string;
+  phoneDisplay: string;
+  phoneHref: string;
+};
+
+export default function Header({ siteName, logoUrl, phoneDisplay, phoneHref }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
@@ -17,7 +24,7 @@ export default function Header() {
       <div className="container-x flex h-16 items-center justify-between lg:h-20">
         <div className="flex items-center gap-12">
           <Link href="/" aria-label="דף הבית" onClick={close}>
-            <Image src="/images/logo.png" alt={site.name} width={30} height={38} priority />
+            <Image src={logoUrl} alt={siteName} width={30} height={38} priority className="h-[38px] w-auto" />
           </Link>
           <nav className="hidden items-center gap-8 font-heading text-[15px] font-semibold text-ink md:flex">
             {navLinks.map((link) => (
@@ -34,11 +41,11 @@ export default function Header() {
         </div>
 
         <div className="hidden items-center gap-6 md:flex">
-          <a href={site.phoneHref} className="flex items-center gap-2 font-heading text-base font-bold text-ink">
+          <a href={phoneHref} className="flex items-center gap-2 font-heading text-base font-bold text-ink">
             <Image src="/icons/phone.svg" alt="" width={18} height={18} />
-            <span dir="ltr">{site.phoneDisplay}</span>
+            <span dir="ltr">{phoneDisplay}</span>
           </a>
-          <Button href="/contact#contact-form" className="w-[166px]">
+          <Button href="/contact#contact-form" className="w-[166px]" trackCta="header_quote">
             קבלו הצעת מחיר
           </Button>
         </div>
@@ -71,12 +78,12 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
-            <a href={site.phoneHref} className="flex items-center gap-2 py-3 font-bold">
+            <a href={phoneHref} className="flex items-center gap-2 py-3 font-bold">
               <Image src="/icons/phone.svg" alt="" width={18} height={18} />
-              <span dir="ltr">{site.phoneDisplay}</span>
+              <span dir="ltr">{phoneDisplay}</span>
             </a>
             <div onClick={close} className="pt-2">
-              <Button href="/contact#contact-form" className="w-full">
+              <Button href="/contact#contact-form" className="w-full" trackCta="mobile_menu_quote">
                 קבלו הצעת מחיר
               </Button>
             </div>

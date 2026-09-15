@@ -6,7 +6,14 @@ import LeadForm from "@/components/LeadForm";
 import ProjectCard from "@/components/ProjectCard";
 import Reviews from "@/components/Reviews";
 import Stats from "@/components/Stats";
-import { projects, site } from "@/lib/site";
+import { projects } from "@/lib/site";
+import { buildPageMetadata } from "@/lookup/seo";
+import { getSiteSettings } from "@/lookup/settings";
+import { whatsappHref } from "@/lookup/settings-model";
+
+export function generateMetadata() {
+  return buildPageMetadata({ path: "/" });
+}
 
 const services = [
   { icon: "lamp-desk", title: "שיפוץ משרדים", text: "התאמת משרדים קיימים לצרכים החדשים של העסק." },
@@ -38,7 +45,8 @@ const faq = [
   { q: "האם יש אחריות?", a: "כן. פרטי האחריות מותאמים לסוג העבודה ומפורטים בהצעת המחיר." },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const settings = await getSiteSettings();
   return (
     <>
       {/* Hero */}
@@ -56,7 +64,7 @@ export default function Home() {
                 התכנון ועד למסירת הפרויקט.
               </p>
             </div>
-            <Button href={site.whatsappHref} variant="outline">
+            <Button href={whatsappHref(settings.whatsapp)} variant="outline" trackCta="hero_whatsapp">
               שוחחו איתנו ב-WhatsApp
             </Button>
           </div>
@@ -70,7 +78,7 @@ export default function Home() {
               sizes="(min-width: 1280px) 634px, 100vw"
               className="object-cover"
             />
-            <LeadForm className="relative w-full max-w-[436px] shadow-[0_0_2.5px_rgba(0,0,0,0.25)]" />
+            <LeadForm formName="home_hero" className="relative w-full max-w-[436px] shadow-[0_0_2.5px_rgba(0,0,0,0.25)]" />
           </div>
         </div>
       </section>
@@ -194,7 +202,7 @@ export default function Home() {
               <ProjectCard key={project.title} project={project} />
             ))}
           </div>
-          <Button href="/projects" variant="outline">
+          <Button href="/projects" variant="outline" trackCta="home_more_projects">
             לצפייה בעוד פרויקטים
           </Button>
         </div>
@@ -206,6 +214,7 @@ export default function Home() {
 
       <CtaSection
         id="quote-form"
+        formName="home_cta"
         title="יש לכם פרויקט שמתוכנן בקרוב?"
         subtitle="נשמח להכיר את הצרכים שלכם ולהציע פתרון מקצועי שמותאם בדיוק לעסק שלכם."
       />

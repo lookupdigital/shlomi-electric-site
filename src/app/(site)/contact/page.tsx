@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
 import Image from "next/image";
 import Button from "@/components/Button";
 import CtaSection from "@/components/CtaSection";
 import Faq from "@/components/Faq";
 import Stats from "@/components/Stats";
+import { buildPageMetadata } from "@/lookup/seo";
 
-export const metadata: Metadata = {
-  title: "צור קשר",
-};
+export function generateMetadata() {
+  return buildPageMetadata({ path: "/contact", title: "צור קשר" });
+}
 
 // שאלות מהפיגמה; התשובות — טקסט זמני לאישור הלקוח.
 const faq = [
@@ -32,7 +32,7 @@ export default function ContactPage() {
                 מקצועי, מסודר ומדויק.
               </p>
             </div>
-            <Button href="#contact-form" variant="outline">
+            <Button href="#contact-form" variant="outline" trackCta="contact_hero">
               צרו קשר
             </Button>
           </div>
@@ -59,6 +59,7 @@ export default function ContactPage() {
 
       <CtaSection
         id="contact-form"
+        formName="contact"
         title="ספרו לנו על הפרויקט שלכם."
         subtitle="ניצור איתכם קשר בהקדם כדי להבין את הצרכים שלכם ולהציע פתרון שמתאים בדיוק לפרויקט."
         withEmail

@@ -2,6 +2,7 @@ import LeadForm from "@/components/LeadForm";
 
 type Props = {
   id?: string;
+  formName: string;
   title: string;
   subtitle: string;
   withEmail?: boolean;
@@ -9,7 +10,7 @@ type Props = {
   submitLabel?: string;
 };
 
-export default function CtaSection({ id, title, subtitle, withEmail, withConsent, submitLabel }: Props) {
+export default function CtaSection({ id, formName, title, subtitle, withEmail, withConsent, submitLabel }: Props) {
   return (
     <section id={id} className="scroll-mt-16 bg-navy lg:scroll-mt-20">
       <div className="container-x flex flex-col items-center gap-12 py-16 lg:py-20">
@@ -18,6 +19,7 @@ export default function CtaSection({ id, title, subtitle, withEmail, withConsent
           <p className="subheading opacity-80">{subtitle}</p>
         </div>
         <LeadForm
+          formName={formName}
           withEmail={withEmail}
           withConsent={withConsent}
           submitLabel={submitLabel}

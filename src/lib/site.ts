@@ -1,12 +1,26 @@
-// פרטי יצירת קשר — כרגע ערכי דמו מהפיגמה. להחלפה במספרים האמיתיים של הלקוח.
-export const site = {
-  name: "שלומי שירותי חשמל וקבלנות",
-  phoneDisplay: "03-555-1234",
-  phoneHref: "tel:+97235551234",
-  whatsappHref: "https://wa.me/972500000000",
+import type { SiteDefaults } from "@/lookup/settings-model";
+
+// Client-specific configuration for this site. Business details below are fallbacks: values saved in
+// /admin/settings take precedence. The contact details are still the Figma demo values — see
+// docs/launch-content-checklist.md.
+export const siteDefaults: SiteDefaults = {
+  businessName: "שלומי שירותי חשמל ועבודות בנייה וקבלנות",
+  siteName: "שלומי שירותי חשמל וקבלנות",
+  phone: "03-555-1234",
+  whatsapp: "972500000000",
   email: "info@nidbach.co.il",
   address: "רחוב הברזל 30, תל אביב",
+  logoUrl: "/images/logo.png",
+  defaultMetaDescription:
+    "מעל 27 שנות ניסיון בשיפוץ, הקמה ועבודות גמר למשרדים ועסקים. קבלן רשום, חשמלאי מוסמך וליווי מלא – משלב התכנון ועד למסירת הפרויקט.",
 };
+
+/** Public static pages — used by the sitemap and the admin "Pages" SEO screen. */
+export const publicPages: { path: string; label: string; title?: string }[] = [
+  { path: "/", label: "דף הבית" },
+  { path: "/projects", label: "פרויקטים", title: "פרויקטים" },
+  { path: "/contact", label: "צור קשר", title: "צור קשר" },
+];
 
 export const navLinks = [
   { href: "/", label: "בית" },
