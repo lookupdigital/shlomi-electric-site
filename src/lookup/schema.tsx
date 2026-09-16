@@ -1,5 +1,5 @@
 import type { SiteConfig } from "@/lookup/config";
-import { absoluteUrl, type SiteSettings } from "@/lookup/settings-model";
+import { absoluteUrl, phoneHref, type SiteSettings } from "@/lookup/settings-model";
 
 type Schema = Record<string, unknown>;
 
@@ -16,7 +16,7 @@ export function JsonLd({ data }: { data: Schema | Schema[] }) {
   );
 }
 
-type SchemaConfig = Pick<SiteConfig, "locale" | "schema">;
+type SchemaConfig = Pick<SiteConfig, "locale" | "schema" | "phone">;
 
 export function organizationSchema(settings: SiteSettings): Schema {
   const sameAs = Object.values(settings.social).filter(Boolean);
@@ -49,7 +49,8 @@ export function localBusinessSchema(settings: SiteSettings, config: SchemaConfig
     name: settings.businessName,
     url: settings.siteUrl,
     image: absoluteUrl(settings.siteUrl, settings.logoUrl),
-    telephone: settings.phone || undefined,
+    // International format ("+972…"), the same number the site's tel: links use.
+    telephone: phoneHref(settings.phone, config.phone).replace(/^tel:/, "") || undefined,
     email: settings.email || undefined,
     address: settings.address ? { "@type": "PostalAddress", streetAddress: settings.address } : undefined,
     areaServed: settings.serviceArea || undefined,

@@ -16,6 +16,7 @@ import { shouldDeliverLead, signWebhookPayload } from "@/lookup/leads/notify";
 import { clientIp, isAuthorizedTestSubmission, isTestLead, rateLimitBucket } from "@/lookup/leads/protection";
 import { createLeadSchema } from "@/lookup/leads/schema";
 import { leadSource } from "@/lookup/leads/source";
+import { ogLogoSource } from "@/lookup/og-image";
 import { findRedirectLoop, isValidDestination, normalizePath } from "@/lookup/redirects";
 import { safeHref, safeImageSrc } from "@/lookup/richtext";
 import { localBusinessSchema, siteSchemas } from "@/lookup/schema";
@@ -65,6 +66,23 @@ describe("site icon", () => {
   });
 });
 
+describe("admin-driven assets and routes", () => {
+  it("takes the generated OG image logo from the admin logo, falling back to the shipped logo", () => {
+    const uploaded = "https://abc.supabase.co/storage/v1/object/public/media/uploads/logo.png";
+    expect(ogLogoSource({ logoUrl: uploaded }, siteConfig)).toEqual({ kind: "remote", url: uploaded });
+    expect(ogLogoSource({ logoUrl: "/images/other.png" }, siteConfig)).toEqual({ kind: "file", path: "images/other.png" });
+    expect(ogLogoSource({ logoUrl: "" }, siteConfig)).toEqual({ kind: "file", path: siteConfig.branding.logoUrl.replace(/^\//, "") });
+  });
+
+  it("renders routes that read admin settings per request (a prerendered copy goes stale after admin changes)", () => {
+    for (const file of ["src/app/og-default.png/route.tsx", "src/app/favicon.ico/route.ts", "src/app/sitemap.ts", "src/app/robots.ts"]) {
+      const source = readFileSync(join(process.cwd(), file), "utf8");
+      expect(source, file).toContain('export const dynamic = "force-dynamic"');
+      expect(source, file).not.toContain("force-static");
+    }
+  });
+});
+
 describe("service area setting", () => {
   it("reads the admin value, keeps a cleared value empty, and falls back to config only without a usable row", () => {
     expect(mergeSiteSettings({ service_area: "  North  " }, siteConfig).serviceArea).toBe("North");
@@ -83,9 +101,11 @@ describe("structured data", () => {
     "example.com",
   );
 
-  it("uses the service area from the settings in LocalBusiness", () => {
+  it("uses the service area from the settings and an international telephone in LocalBusiness", () => {
     const schema = localBusinessSchema(settings, siteConfig);
     expect(schema.areaServed).toBe("Example Area");
+    expect(schema.telephone).toBe("+972500000000");
+    expect(localBusinessSchema({ ...settings, phone: "" }, siteConfig).telephone).toBeUndefined();
     expect(schema["@type"]).toEqual(siteConfig.schema.businessTypes);
     expect(localBusinessSchema({ ...settings, serviceArea: "" }, siteConfig).areaServed).toBeUndefined();
   });
