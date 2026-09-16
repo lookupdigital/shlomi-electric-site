@@ -31,7 +31,7 @@ Preview and Production share one Supabase project: settings saved in the admin a
 | ☑ | Address (confirmed) | רננים 14, רמת גן | Admin → Settings |
 | ☑ | Service area (confirmed) | בעיקר גוש דן, וכן אזורים סמוכים בצפון ובדרום | Admin → Settings → "אזורי שירות" (footer, contact FAQ, schema `areaServed`); needs migration 6 |
 | ☑ | Claims (confirmed) | 27 שנות ניסיון · 2,000+ לקוחות · קבלן רשום · חשמלאי מוסמך | Stats, home FAQ |
-| ☐ | **Favicon** — `src/app/favicon.ico` is the create-next-app default | — | Admin → Favicon (client to supply) |
+| ☐ | **Favicon** — confirm the icon uploaded in Admin is final (the current upload is 948×879; a square PNG such as 512×512 displays best). Empty = the logo is used | — | Admin → Favicon |
 | ☐ | Confirm `/images/logo.png` is the client's current logo (also used for the generated OG image and Organization schema) | — | Client |
 | ☐ | Social profile URLs (optional) | none | Admin → Social |
 | ☐ | Enable LocalBusiness structured data — only after the final domain is live and the logo is confirmed | disabled | Admin → "Business details verified" |

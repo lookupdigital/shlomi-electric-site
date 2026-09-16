@@ -110,6 +110,11 @@ export function whatsappHref(number: string, rules: PhoneRules): string {
   return digits ? `https://wa.me/${digits}` : "";
 }
 
+/** The site icon: the favicon from the admin settings, or the logo when no favicon has been configured. */
+export function siteIconUrl(settings: Pick<SiteSettings, "faviconUrl" | "logoUrl">): string {
+  return settings.faviconUrl || settings.logoUrl;
+}
+
 export function absoluteUrl(origin: string, pathOrUrl: string): string {
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
   return `${origin}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;

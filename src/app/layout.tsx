@@ -3,6 +3,7 @@ import { Assistant, Heebo } from "next/font/google";
 import Analytics from "@/lookup/analytics/Analytics";
 import { isGtmAllowed } from "@/lookup/runtime";
 import { getSiteSettings, isIndexable } from "@/lookup/settings";
+import { siteIconUrl } from "@/lookup/settings-model";
 import { siteConfig } from "@/site.config";
 import "./globals.css";
 
@@ -29,7 +30,8 @@ export async function generateMetadata(): Promise<Metadata> {
     description: settings.defaultMetaDescription || undefined,
     robots: { index: indexable, follow: indexable },
     openGraph: { type: "website", locale: siteConfig.locale.ogLocale, siteName: settings.siteName },
-    ...(settings.faviconUrl ? { icons: { icon: settings.faviconUrl } } : {}),
+    // The admin favicon (or the logo) is the only icon: there is no static app/favicon.ico to override it.
+    icons: { icon: siteIconUrl(settings), apple: siteIconUrl(settings) },
   };
 }
 

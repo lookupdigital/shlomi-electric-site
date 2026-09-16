@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { classifyClick, sanitizeEvent, sanitizeLocation } from "@/lookup/analytics/events";
@@ -22,7 +22,7 @@ import { localBusinessSchema, siteSchemas } from "@/lookup/schema";
 import { getSiteEnvironment, isGtmAllowed, isProductionSite } from "@/lookup/runtime";
 import { buildAdminCsp, buildPublicCsp } from "@/lookup/security/csp";
 import { composeMetadata, latestTimestamp } from "@/lookup/seo-model";
-import { mergeSiteSettings, phoneHref, whatsappHref } from "@/lookup/settings-model";
+import { mergeSiteSettings, phoneHref, siteIconUrl, whatsappHref } from "@/lookup/settings-model";
 import { SLUG_PATTERN, slugify } from "@/lookup/slug";
 import { ADMIN_COOKIE_PATH, isSupabaseAuthCookie, withAdminLifetime } from "@/lookup/supabase/cookies";
 import { siteConfig } from "@/site.config";
@@ -47,6 +47,21 @@ describe("site settings", () => {
     expect(phoneHref("(415) 555-0100", { countryCallingCode: "1", nationalTrunkPrefix: "" })).toBe("tel:+4155550100");
     expect(phoneHref("+1 415 555 0100", { countryCallingCode: "972", nationalTrunkPrefix: "0" })).toBe("tel:+14155550100");
     expect(phoneHref("", siteConfig.phone)).toBe("");
+  });
+});
+
+describe("site icon", () => {
+  it("uses the admin favicon, falling back to the logo", () => {
+    expect(siteIconUrl(mergeSiteSettings({ favicon_url: "https://cdn.example.com/icon.png" }, siteConfig))).toBe("https://cdn.example.com/icon.png");
+    expect(siteIconUrl(mergeSiteSettings({ favicon_url: "", logo_url: "https://cdn.example.com/logo.png" }, siteConfig))).toBe("https://cdn.example.com/logo.png");
+    expect(siteIconUrl(mergeSiteSettings(null, siteConfig))).toBe(siteConfig.branding.logoUrl);
+  });
+
+  it("ships no static icon file in app/ that would override the admin setting", () => {
+    const staticIcons = readdirSync(join(process.cwd(), "src", "app"), { withFileTypes: true })
+      .filter((entry) => entry.isFile() && /^(favicon|icon|apple-icon)\b/.test(entry.name))
+      .map((entry) => entry.name);
+    expect(staticIcons).toEqual([]);
   });
 });
 

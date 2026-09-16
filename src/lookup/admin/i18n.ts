@@ -93,7 +93,7 @@ const he = {
     logo: "לוגו",
     logoHint: "ריק = הלוגו שבקוד האתר",
     favicon: "Favicon",
-    faviconHint: "PNG/ICO ריבועי. ריק = favicon.ico הקיים.",
+    faviconHint: "תמונה ריבועית (למשל PNG בגודל 512×512). ריק = הלוגו.",
     localBusiness: "פרטי העסק אומתו — הצג LocalBusiness בנתונים מובנים",
     localBusinessHint: "להפעיל רק אחרי שהטלפון, הכתובת והאימייל האמיתיים הוזנו.",
     social: "רשתות חברתיות",
