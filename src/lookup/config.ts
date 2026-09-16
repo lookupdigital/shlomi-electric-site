@@ -41,8 +41,8 @@ export type SiteConfig = {
   phone: { countryCallingCode: string; nationalTrunkPrefix: string };
   business: {
     /**
-     * Confirmed service area in the site's language, e.g. "בעיקר גוש דן, וכן אזורים סמוכים בצפון ובדרום".
-     * Shown in the footer and used as schema.org areaServed; empty hides it. Contact details stay in the admin.
+     * Resilience fallback for the service area. The admin setting (site_settings.service_area) is the source of truth;
+     * this value is used only when the settings row cannot be read or the database predates that column.
      */
     serviceArea: string;
   };

@@ -88,6 +88,8 @@ const he = {
     whatsappHint: "ספרות בלבד, לדוגמה 972501234567 או 050-1234567",
     email: "אימייל",
     address: "כתובת",
+    serviceArea: "אזורי שירות",
+    serviceAreaHint: "מוצג באתר (בפוטר ובשאלות הנפוצות) ובנתונים המובנים. ריק = לא מוצג.",
     logo: "לוגו",
     logoHint: "ריק = הלוגו שבקוד האתר",
     favicon: "Favicon",

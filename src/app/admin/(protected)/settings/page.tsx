@@ -46,6 +46,7 @@ export default async function SettingsPage() {
           <TextField label={s.whatsapp} name="whatsapp" defaultValue={row?.whatsapp} dir="ltr" hint={s.whatsappHint} />
           <TextField label={s.email} name="email" defaultValue={row?.email} dir="ltr" />
           <TextField label={s.address} name="address" defaultValue={row?.address} maxLength={300} wide />
+          <TextField label={s.serviceArea} name="service_area" defaultValue={row?.service_area} maxLength={300} hint={s.serviceAreaHint} wide />
           <ImageField label={s.logo} name="logo_url" defaultValue={row?.logo_url} hint={s.logoHint} />
           <ImageField label={s.favicon} name="favicon_url" defaultValue={row?.favicon_url} hint={s.faviconHint} />
           <CheckboxField label={s.localBusiness} name="local_business_schema_enabled" defaultChecked={row?.local_business_schema_enabled} hint={s.localBusinessHint} />

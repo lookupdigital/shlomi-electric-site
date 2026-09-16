@@ -16,7 +16,7 @@ export function JsonLd({ data }: { data: Schema | Schema[] }) {
   );
 }
 
-type SchemaConfig = Pick<SiteConfig, "locale" | "schema" | "business">;
+type SchemaConfig = Pick<SiteConfig, "locale" | "schema">;
 
 export function organizationSchema(settings: SiteSettings): Schema {
   const sameAs = Object.values(settings.social).filter(Boolean);
@@ -52,7 +52,7 @@ export function localBusinessSchema(settings: SiteSettings, config: SchemaConfig
     telephone: settings.phone || undefined,
     email: settings.email || undefined,
     address: settings.address ? { "@type": "PostalAddress", streetAddress: settings.address } : undefined,
-    areaServed: config.business.serviceArea || undefined,
+    areaServed: settings.serviceArea || undefined,
   };
 }
 

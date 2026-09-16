@@ -6,7 +6,7 @@ export const siteConfig = defineSiteConfig({
   identity: { siteName: "שלומי בארון - שירותי חשמל ועבודות בנייה ושיפוצים" },
   locale: { htmlLang: "he", dir: "rtl", bcp47: "he-IL", ogLocale: "he_IL", timeZone: "Asia/Jerusalem" },
   phone: { countryCallingCode: "972", nationalTrunkPrefix: "0" },
-  // Confirmed by the client. Do not widen the coverage without their confirmation.
+  // Fallback only — the service area is edited in Admin → Site settings. Keep in sync with the confirmed value.
   business: { serviceArea: "בעיקר גוש דן, וכן אזורים סמוכים בצפון ובדרום" },
   schema: { businessTypes: ["Electrician", "GeneralContractor"] },
   routes: {

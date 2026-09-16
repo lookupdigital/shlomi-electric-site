@@ -30,14 +30,17 @@ Optional variables (lead webhook, Turnstile, admin host, environment) are docume
 4. `supabase/migrations/20260915130300_lookup_media_storage.sql`
 5. `supabase/migrations/20260916090000_lookup_hardening.sql` — lead status / test flag / notification state,
    admin update & delete, rate limiting, Consent Mode default, generalized blog slugs.
+6. `supabase/migrations/20260916120000_lookup_service_area.sql` — admin-editable service area
+   (`site_settings.service_area`). Until it is applied the site shows the fallback from `src/site.config.ts` and
+   saving Admin → Site settings fails.
 
-Each migration aborts without changes if it has already been applied (or, for 5, if 1–4 are missing). All are
+Each migration aborts without changes if it has already been applied (or if the previous ones are missing). All are
 additive. For certainty in the SQL Editor, wrap a paste in `begin;` … `commit;`.
 
 After schema changes in code, regenerate types: `npm run db:types` (CI fails if they are out of date).
 
 > If the Supabase CLI is linked later, mark these as applied so they are not replayed:
-> `npx supabase migration repair --status applied 20260915130000 20260915130100 20260915130200 20260915130300 20260916090000`
+> `npx supabase migration repair --status applied 20260915130000 20260915130100 20260915130200 20260915130300 20260916090000 20260916120000`
 
 ### One-time client seed (this site only)
 `supabase/seeds/initial-site-settings.sql` copies the contact details the site showed before (still the Figma demo

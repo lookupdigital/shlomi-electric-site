@@ -27,7 +27,7 @@ export default async function SiteChrome({ settings, children }: { settings: Sit
         phoneHref={tel}
         email={settings.email}
         address={settings.address}
-        serviceArea={siteConfig.business.serviceArea}
+        serviceArea={settings.serviceArea}
         links={links}
       />
     </>

@@ -5,22 +5,27 @@ import Faq from "@/components/Faq";
 import Stats from "@/components/Stats";
 import { faqSchema, JsonLd } from "@/lookup/schema";
 import { buildPageMetadata } from "@/lookup/seo";
+import { getSiteSettings } from "@/lookup/settings";
 import { siteConfig } from "@/site.config";
 
 export function generateMetadata() {
   return buildPageMetadata({ path: "/contact", title: "צור קשר" });
 }
 
-// Answers use only confirmed facts (service area from siteConfig) and what the site itself offers — no prices,
-// guarantees or response times. Distinct from the home page FAQ; emitted as FAQPage data.
-const faq = [
-  { q: "באילו אזורים אתם נותנים שירות?", a: `אזורי השירות שלנו: ${siteConfig.business.serviceArea}.` },
+// Answers use only confirmed facts (the service area comes from Admin → Site settings) and what the site itself
+// offers — no prices, guarantees or response times. Distinct from the home page FAQ; emitted as FAQPage data.
+const staticFaq = [
   { q: "איך אפשר ליצור איתכם קשר?", a: "אפשר להשאיר פרטים בטופס שבעמוד הזה, להתקשר או לשלוח הודעה ב-WhatsApp." },
   { q: "איך נקבעת הצעת המחיר?", a: "הצעת המחיר נקבעת לפי היקף העבודה וסוג העבודות הנדרשות." },
   { q: "אפשר לפרט על הפרויקט כבר בפנייה?", a: "כן. בטופס יש שדה הודעה שבו אפשר לתאר את הפרויקט." },
 ];
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const { serviceArea } = await getSiteSettings();
+  const faq = [
+    ...(serviceArea ? [{ q: "באילו אזורים אתם נותנים שירות?", a: `אזורי השירות שלנו: ${serviceArea}.` }] : []),
+    ...staticFaq,
+  ];
   return (
     <>
       <section className="bg-offwhite">

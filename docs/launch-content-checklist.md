@@ -29,7 +29,7 @@ Preview and Production share one Supabase project: settings saved in the admin a
 | ☑ | WhatsApp (confirmed) | 050-536-7464 | Admin → Settings |
 | ☑ | Email (confirmed) | Shlomi_boaron@walla.co.il | Admin → Settings |
 | ☑ | Address (confirmed) | רננים 14, רמת גן | Admin → Settings |
-| ☑ | Service area (confirmed) | בעיקר גוש דן, וכן אזורים סמוכים בצפון ובדרום | Code: `src/site.config.ts` → `business.serviceArea` (footer, contact FAQ, schema `areaServed`) |
+| ☑ | Service area (confirmed) | בעיקר גוש דן, וכן אזורים סמוכים בצפון ובדרום | Admin → Settings → "אזורי שירות" (footer, contact FAQ, schema `areaServed`); needs migration 6 |
 | ☑ | Claims (confirmed) | 27 שנות ניסיון · 2,000+ לקוחות · קבלן רשום · חשמלאי מוסמך | Stats, home FAQ |
 | ☐ | **Favicon** — `src/app/favicon.ico` is the create-next-app default | — | Admin → Favicon (client to supply) |
 | ☐ | Confirm `/images/logo.png` is the client's current logo (also used for the generated OG image and Organization schema) | — | Client |

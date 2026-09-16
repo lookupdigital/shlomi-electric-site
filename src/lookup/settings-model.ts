@@ -14,6 +14,7 @@ export type SiteSettings = {
   whatsapp: string;
   email: string;
   address: string;
+  serviceArea: string;
   logoUrl: string;
   faviconUrl: string;
   social: { facebook: string; instagram: string; linkedin: string; tiktok: string; youtube: string };
@@ -41,11 +42,12 @@ export function normalizeOrigin(value?: string | null): string {
 /**
  * The database is the source of truth: an empty value stays empty (no demo/code fallbacks), so a field an admin
  * clears never reappears. The only fallbacks are structural: the brand name when the site name is empty,
- * the logo file shipped with the site, and the site URL from the environment.
+ * the logo file shipped with the site, the site URL from the environment, and the configured service area when the
+ * settings row is unavailable or has no service_area column yet (migration 6 not applied).
  */
 export function mergeSiteSettings(
   row: Partial<SiteSettingsRow> | null,
-  config: Pick<SiteConfig, "identity" | "branding">,
+  config: Pick<SiteConfig, "identity" | "branding" | "business">,
   fallbackSiteUrl?: string,
 ): SiteSettings {
   const siteName = text(row?.site_name) || config.identity.siteName;
@@ -57,6 +59,7 @@ export function mergeSiteSettings(
     whatsapp: text(row?.whatsapp),
     email: text(row?.email),
     address: text(row?.address),
+    serviceArea: row && row.service_area !== undefined ? text(row.service_area) : config.business.serviceArea,
     logoUrl: text(row?.logo_url) || config.branding.logoUrl,
     faviconUrl: text(row?.favicon_url),
     social: {

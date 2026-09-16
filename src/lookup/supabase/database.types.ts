@@ -283,6 +283,7 @@ export type Database = {
           logo_url: string | null;
           meta_pixel_id: string | null;
           phone: string | null;
+          service_area: string | null;
           site_name: string | null;
           site_url: string | null;
           tiktok_pixel_id: string | null;
@@ -312,6 +313,7 @@ export type Database = {
           logo_url?: string | null;
           meta_pixel_id?: string | null;
           phone?: string | null;
+          service_area?: string | null;
           site_name?: string | null;
           site_url?: string | null;
           tiktok_pixel_id?: string | null;
@@ -341,6 +343,7 @@ export type Database = {
           logo_url?: string | null;
           meta_pixel_id?: string | null;
           phone?: string | null;
+          service_area?: string | null;
           site_name?: string | null;
           site_url?: string | null;
           tiktok_pixel_id?: string | null;

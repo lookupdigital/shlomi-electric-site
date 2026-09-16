@@ -37,6 +37,7 @@ const settingsSchema = z.object({
   whatsapp: pattern(/^[0-9+ -]{6,25}$/, s.validation.whatsapp),
   email: optional(z.email(s.validation.email).max(200)),
   address: text(300),
+  service_area: text(300),
   logo_url: optional(imageUrl),
   favicon_url: optional(imageUrl),
   facebook_url: optional(httpsUrl),

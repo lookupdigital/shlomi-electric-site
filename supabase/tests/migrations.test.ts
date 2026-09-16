@@ -6,10 +6,11 @@ import { PGlite } from "@electric-sql/pglite";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const migrationsDir = join(process.cwd(), "supabase", "migrations");
-const migrations = readdirSync(migrationsDir)
+const migrationFiles = readdirSync(migrationsDir)
   .filter((file) => file.endsWith(".sql"))
-  .sort()
-  .map((file) => readFileSync(join(migrationsDir, file), "utf8"));
+  .sort();
+const migrations = migrationFiles.map((file) => readFileSync(join(migrationsDir, file), "utf8"));
+const migration = (name: string) => migrations[migrationFiles.findIndex((file) => file.endsWith(`_${name}.sql`))];
 const SUPABASE_STUB = readFileSync(join(process.cwd(), "supabase", "tests", "supabase-stub.sql"), "utf8");
 
 const ADMIN = "00000000-0000-0000-0000-00000000000a";
@@ -61,7 +62,23 @@ describe("Lookup migrations", () => {
   });
 
   it("the hardening migration refuses to run twice", async () => {
-    await expect(db.exec(migrations[migrations.length - 1])).rejects.toThrow(/already applied/);
+    await expect(db.exec(migration("lookup_hardening"))).rejects.toThrow(/already applied/);
+  });
+
+  it("the service area migration refuses to run twice or before migration 5", async () => {
+    await expect(db.exec(migration("lookup_service_area"))).rejects.toThrow(/already applied/);
+    const other = await freshDatabase();
+    for (const sql of migrations.slice(0, 4)) await other.exec(sql);
+    await expect(other.exec(migration("lookup_service_area"))).rejects.toThrow(/apply migrations 1-5 first/);
+  });
+
+  it("admins can edit the service area; the public can read it but not change it", async () => {
+    await as(db, "authenticated", ADMIN, "update public.site_settings set service_area = 'Area A' where id = 1");
+    expect(await as(db, "anon", null, "select service_area from public.site_settings")).toEqual([{ service_area: "Area A" }]);
+    await as(db, "authenticated", USER, "update public.site_settings set service_area = 'Hijacked' where id = 1");
+    expect(await as(db, "anon", null, "select service_area from public.site_settings")).toEqual([{ service_area: "Area A" }]);
+    await expect(db.exec(`update public.site_settings set service_area = '${"x".repeat(301)}'`)).rejects.toThrow(/check constraint/);
+    await db.exec("update public.site_settings set service_area = null");
   });
 
   it("anon cannot read or insert leads", async () => {

@@ -50,17 +50,29 @@ describe("site settings", () => {
   });
 });
 
+describe("service area setting", () => {
+  it("reads the admin value, keeps a cleared value empty, and falls back to config only without a usable row", () => {
+    expect(mergeSiteSettings({ service_area: "  North  " }, siteConfig).serviceArea).toBe("North");
+    expect(mergeSiteSettings({ service_area: null }, siteConfig).serviceArea).toBe("");
+    expect(mergeSiteSettings({ service_area: "" }, siteConfig).serviceArea).toBe("");
+    // Database without migration 6 (column missing) or settings unavailable.
+    expect(mergeSiteSettings({ phone: "050-000-0000" }, siteConfig).serviceArea).toBe(siteConfig.business.serviceArea);
+    expect(mergeSiteSettings(null, siteConfig).serviceArea).toBe(siteConfig.business.serviceArea);
+  });
+});
+
 describe("structured data", () => {
   const settings = mergeSiteSettings(
-    { business_name: "Example Business", phone: "050-000-0000", local_business_schema_enabled: true },
+    { business_name: "Example Business", phone: "050-000-0000", service_area: "Example Area", local_business_schema_enabled: true },
     siteConfig,
     "example.com",
   );
 
-  it("adds the configured service area to LocalBusiness", () => {
+  it("uses the service area from the settings in LocalBusiness", () => {
     const schema = localBusinessSchema(settings, siteConfig);
-    expect(schema.areaServed).toBe(siteConfig.business.serviceArea);
+    expect(schema.areaServed).toBe("Example Area");
     expect(schema["@type"]).toEqual(siteConfig.schema.businessTypes);
+    expect(localBusinessSchema({ ...settings, serviceArea: "" }, siteConfig).areaServed).toBeUndefined();
   });
 
   it("never emits review or rating data", () => {
