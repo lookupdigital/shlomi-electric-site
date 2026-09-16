@@ -1,10 +1,9 @@
 "use server";
 
-import { updateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { checkbox, firstIssue, formEntries, httpsUrl, httpUrl, imageUrl, optional, type FormState } from "@/lookup/admin/form-utils";
 import { t } from "@/lookup/admin/i18n";
-import { revalidatePublicSite } from "@/lookup/admin/revalidate";
 import { requireAdmin } from "@/lookup/auth";
 import { SITE_SETTINGS_TAG } from "@/lookup/settings";
 
@@ -68,6 +67,6 @@ export async function saveSiteSettings(formData: FormData): Promise<FormState> {
   if (!data?.length) return { ok: false, message: s.missingTable };
 
   updateTag(SITE_SETTINGS_TAG);
-  revalidatePublicSite();
+  revalidatePath("/", "layout");
   return { ok: true, message: s.saved };
 }

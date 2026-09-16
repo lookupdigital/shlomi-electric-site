@@ -1,11 +1,10 @@
 "use server";
 
-import { updateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { checkbox, firstIssue, formEntries, httpUrl, imageUrl, optional, type FormState } from "@/lookup/admin/form-utils";
 import { t } from "@/lookup/admin/i18n";
-import { revalidatePublicSite } from "@/lookup/admin/revalidate";
 import { requireAdmin } from "@/lookup/auth";
 import { POSTS_TAG } from "@/lookup/posts";
 import { SLUG_PATTERN, slugify } from "@/lookup/slug";
@@ -71,7 +70,7 @@ export async function savePost(formData: FormData): Promise<FormState> {
   }
 
   updateTag(POSTS_TAG);
-  revalidatePublicSite();
+  revalidatePath("/", "layout");
 
   if (!id) redirect(`/admin/posts/${postId}`);
   return { ok: true, message: record.status === "published" ? t.posts.savedPublished : t.posts.savedDraft };

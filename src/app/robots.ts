@@ -2,6 +2,9 @@ import type { MetadataRoute } from "next";
 import { isProductionSite } from "@/lookup/runtime";
 import { getSiteSettings } from "@/lookup/settings";
 
+// Per request for the same reason as sitemap.ts: the sitemap URL follows the admin "site URL" setting.
+export const dynamic = "force-dynamic";
+
 /**
  * Non-production environments (LOOKUP_SITE_ENV / VERCEL_ENV): block all crawling.
  * Production: allow crawling except private paths. Whether pages may be INDEXED is controlled by the
