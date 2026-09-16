@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, randomUUID } from "node:crypto";
+import { getSiteEnvironment, isProductionSite } from "@/lookup/runtime";
 import { createServiceClient } from "@/lookup/supabase/service";
 
 // Lead notifications via a generic signed webhook (Make, Zapier, n8n, a CRM, or an email relay).
@@ -9,6 +10,14 @@ export const LEAD_WEBHOOK_EVENT = "lead.created";
 
 export function isLeadWebhookConfigured(): boolean {
   return Boolean(process.env.LEAD_WEBHOOK_URL);
+}
+
+/**
+ * Test leads never reach the production webhook. Outside production they go to that environment's own webhook
+ * (set LEAD_WEBHOOK_URL for Preview to a test endpoint), marked with `test` and `environment` in the payload.
+ */
+export function shouldDeliverLead(isTest: boolean, env: Record<string, string | undefined> = process.env): boolean {
+  return !isTest || !isProductionSite(env);
 }
 
 /** HMAC-SHA256 over "<timestamp>.<body>", sent as `X-Lookup-Signature: sha256=<hex>`. */
@@ -30,12 +39,19 @@ export async function deliverLeadNotification(leadId: string): Promise<{ ok: boo
   const supabase = createServiceClient();
   const { data: lead, error: loadError } = await supabase.from("leads").select(NOTIFICATION_COLUMNS).eq("id", leadId).single();
   if (loadError || !lead) return { ok: false, error: `lead not found: ${loadError?.code ?? ""}` };
-  if (lead.is_test) return { ok: true };
+  if (!shouldDeliverLead(lead.is_test)) return { ok: true };
 
   const { id, created_at, ...rest } = lead;
   const fields: Partial<typeof rest> = { ...rest };
   delete fields.is_test;
-  const body = JSON.stringify({ event: LEAD_WEBHOOK_EVENT, lead_id: id, created_at, lead: fields });
+  const body = JSON.stringify({
+    event: LEAD_WEBHOOK_EVENT,
+    lead_id: id,
+    created_at,
+    environment: getSiteEnvironment(),
+    test: lead.is_test,
+    lead: fields,
+  });
   const deliveryId = randomUUID();
 
   let lastError = "";

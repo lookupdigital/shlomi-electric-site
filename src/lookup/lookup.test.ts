@@ -12,8 +12,8 @@ import {
   sanitizeSearchTerm,
   type LeadFilterQuery,
 } from "@/lookup/leads/filters";
-import { signWebhookPayload } from "@/lookup/leads/notify";
-import { clientIp, isAuthorizedTestSubmission, rateLimitBucket } from "@/lookup/leads/protection";
+import { shouldDeliverLead, signWebhookPayload } from "@/lookup/leads/notify";
+import { clientIp, isAuthorizedTestSubmission, isTestLead, rateLimitBucket } from "@/lookup/leads/protection";
 import { createLeadSchema } from "@/lookup/leads/schema";
 import { leadSource } from "@/lookup/leads/source";
 import { findRedirectLoop, isValidDestination, normalizePath } from "@/lookup/redirects";
@@ -190,6 +190,17 @@ describe("lead protection and notifications", () => {
     expect(isAuthorizedTestSubmission(undefined)).toBe(false);
     process.env.E2E_TEST_TOKEN = "short";
     expect(isAuthorizedTestSubmission("short")).toBe(false);
+  });
+
+  it("marks every non-production lead as a test lead and keeps test leads away from the production webhook", () => {
+    expect(isTestLead(false, { VERCEL_ENV: "production" })).toBe(false);
+    expect(isTestLead(true, { VERCEL_ENV: "production" })).toBe(true);
+    expect(isTestLead(false, { VERCEL_ENV: "preview" })).toBe(true);
+    expect(isTestLead(false, {})).toBe(true);
+    expect(isTestLead(false, { LOOKUP_SITE_ENV: "production" })).toBe(false);
+    expect(shouldDeliverLead(false, { VERCEL_ENV: "production" })).toBe(true);
+    expect(shouldDeliverLead(true, { VERCEL_ENV: "production" })).toBe(false);
+    expect(shouldDeliverLead(true, { VERCEL_ENV: "preview" })).toBe(true);
   });
 
   it("signs webhook payloads with HMAC-SHA256 over timestamp and body", () => {

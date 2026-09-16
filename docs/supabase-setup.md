@@ -16,9 +16,9 @@ Supabase Dashboard → project **shlomiboaron** → **Project Settings → API K
 Optional variables (lead webhook, Turnstile, admin host, environment) are documented in `.env.example`.
 
 - **Local:** `.env.local` in the repository root (git-ignored); restart the server after changes.
-- **Vercel:** Project → **Settings → Environment Variables** → add for **Production** and **Preview**. Mark
-  `SUPABASE_SERVICE_ROLE_KEY`, `TURNSTILE_SECRET_KEY`, `LEAD_WEBHOOK_SECRET` and `LEAD_RATE_LIMIT_SALT` as **Sensitive**.
-  Redeploy afterwards (`NEXT_PUBLIC_*` values are baked in at build time).
+- **Vercel:** Project → **Settings → Environment Variables**. The per-environment checklist (Preview vs Production,
+  Sensitive flags) is in `docs/vercel-preview.md`. Redeploy after changes (`NEXT_PUBLIC_*` values are baked in at
+  build time).
 
 ## 2. Migrations
 
@@ -68,7 +68,11 @@ JavaScript-readable cookies are ignored and deleted automatically).
 To remove an admin: `delete from public.admin_users where user_id = (select id from auth.users where email = '…');`
 
 ## 5. Test data
-Automated tests store leads with `is_test = true` (hidden from the admin, exports and notifications). Remove them with:
+Leads are stored with `is_test = true` when they come from an automated test (`E2E_TEST_TOKEN`) or from any
+non-production deployment (Vercel Preview, local). Test leads are hidden from the admin lead list by default (tick
+"include test leads"), excluded from exports and dashboard counts, and never sent to the production webhook. A
+Preview deployment sends its test leads to its own `LEAD_WEBHOOK_URL`, with `"test": true` and
+`"environment": "preview"` in the payload. Remove them with:
 ```sql
 delete from public.leads where is_test;
 ```

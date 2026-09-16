@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { isProductionSite } from "@/lookup/runtime";
 import { createServiceClient } from "@/lookup/supabase/service";
 import { siteConfig } from "@/site.config";
 
@@ -68,11 +69,19 @@ export async function verifyTurnstile(token: string | undefined, ip: string): Pr
   }
 }
 
-/** Test submissions are marked is_test only when the request carries the server-side E2E_TEST_TOKEN. */
+/** Automated test submissions carry the server-side E2E_TEST_TOKEN. */
 export function isAuthorizedTestSubmission(token: string | undefined): boolean {
   const expected = process.env.E2E_TEST_TOKEN;
   if (!expected || !token || expected.length < 16) return false;
   const a = Buffer.from(token);
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/**
+ * Every lead stored outside production (Vercel Preview, local) is a test lead, as is every automated E2E submission.
+ * All environments share one Supabase project, so this keeps Preview leads out of the real lead list and counts.
+ */
+export function isTestLead(isE2eSubmission: boolean, env: Record<string, string | undefined> = process.env): boolean {
+  return isE2eSubmission || !isProductionSite(env);
 }
