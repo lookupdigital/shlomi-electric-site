@@ -13,7 +13,10 @@ export const projectTypes = [
 
 export type Review = { quote: string; name: string; role: string };
 
-// בפיגמה כל ההמלצות זהות (טקסט דמו) — 5 המלצות לפי 5 הנקודות בקרוסלה.
+// MANDATORY PRE-LAUNCH REPLACEMENT — reviews, projects and their images below are TEMPORARY DEMO CONTENT from the
+// Figma template (not this business, not verified). They keep the Preview visually complete until the client's real
+// reviews, projects and photos arrive, and must be replaced before Production (docs/launch-content-checklist.md).
+// Never emit Review/AggregateRating or project structured data from this content.
 export const reviews: Review[] = Array.from({ length: 5 }, () => ({
   quote: "עבדנו עם שלושה קבלנים לפני נדבך. אף אחד לא התקרב לרמת הארגון והליווי שלהם.",
   name: "דוד אלדן",

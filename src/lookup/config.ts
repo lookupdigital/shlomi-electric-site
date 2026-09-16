@@ -39,6 +39,13 @@ export type SiteConfig = {
   };
   /** How local phone numbers are converted to international tel:/WhatsApp links. */
   phone: { countryCallingCode: string; nationalTrunkPrefix: string };
+  business: {
+    /**
+     * Confirmed service area in the site's language, e.g. "בעיקר גוש דן, וכן אזורים סמוכים בצפון ובדרום".
+     * Shown in the footer and used as schema.org areaServed; empty hides it. Contact details stay in the admin.
+     */
+    serviceArea: string;
+  };
   /** schema.org types for the LocalBusiness entity (emitted only after business details are verified). */
   schema: { businessTypes: string[] };
   routes: {

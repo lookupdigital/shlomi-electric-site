@@ -16,8 +16,7 @@ const collage = [
   { src: "/images/projects-hero-1.png", alt: "בניין משרדים מזכוכית" },
 ];
 
-// בפיגמה כל 6 הכרטיסים זהים (דמו) — בינתיים מוצגים הפרויקטים הקיימים פעמיים.
-const grid = [...projects, ...projects];
+// MANDATORY PRE-LAUNCH REPLACEMENT: the collage images are temporary demo/stock images (docs/launch-content-checklist.md).
 
 export default function ProjectsPage() {
   return (
@@ -45,8 +44,8 @@ export default function ProjectsPage() {
         <div className="container-x flex flex-col gap-12 py-16 lg:py-24">
           <h2 className="h2 text-center text-navy">עבודות נבחרות</h2>
           <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-            {grid.map((project, i) => (
-              <ProjectCard key={i} project={project} />
+            {projects.map((project) => (
+              <ProjectCard key={project.title} project={project} />
             ))}
           </div>
         </div>

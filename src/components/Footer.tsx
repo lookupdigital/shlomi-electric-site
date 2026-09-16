@@ -7,12 +7,13 @@ type Props = {
   phoneHref: string;
   email: string;
   address: string;
+  serviceArea: string;
   links: NavLink[];
 };
 
 /** Contact items render only when configured in /admin/settings — nothing falls back to demo values. */
-export default function Footer({ businessName, phoneDisplay, phoneHref, email, address, links }: Props) {
-  const hasContact = Boolean(phoneHref || email || address);
+export default function Footer({ businessName, phoneDisplay, phoneHref, email, address, serviceArea, links }: Props) {
+  const hasContact = Boolean(phoneHref || email || address || serviceArea);
   return (
     <footer className="bg-coal text-white">
       <div className="container-x flex flex-col gap-10 pt-16 pb-10 lg:gap-[60px] lg:pt-20">
@@ -35,6 +36,7 @@ export default function Footer({ businessName, phoneDisplay, phoneHref, email, a
                 </a>
               )}
               {address && <p className="opacity-70">{address}</p>}
+              {serviceArea && <p className="max-w-[260px] opacity-70">{`אזורי שירות: ${serviceArea}.`}</p>}
             </div>
           )}
 

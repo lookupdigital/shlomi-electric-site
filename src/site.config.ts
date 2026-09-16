@@ -3,9 +3,11 @@ import { defineSiteConfig } from "@/lookup/config";
 // Client-specific configuration consumed by the reusable infrastructure in src/lookup.
 // Business contact details are intentionally NOT here: they live in /admin/settings (database).
 export const siteConfig = defineSiteConfig({
-  identity: { siteName: "שלומי שירותי חשמל וקבלנות" },
+  identity: { siteName: "שלומי בארון - שירותי חשמל ועבודות בנייה ושיפוצים" },
   locale: { htmlLang: "he", dir: "rtl", bcp47: "he-IL", ogLocale: "he_IL", timeZone: "Asia/Jerusalem" },
   phone: { countryCallingCode: "972", nationalTrunkPrefix: "0" },
+  // Confirmed by the client. Do not widen the coverage without their confirmation.
+  business: { serviceArea: "בעיקר גוש דן, וכן אזורים סמוכים בצפון ובדרום" },
   schema: { businessTypes: ["Electrician", "GeneralContractor"] },
   routes: {
     corePages: [
@@ -31,9 +33,9 @@ export const siteConfig = defineSiteConfig({
   },
   branding: { logoUrl: "/images/logo.png", ogBackground: "#1c2e49", ogAccent: "#deac44" },
   faq: {
-    // The FAQ answers are still placeholders awaiting client approval (docs/launch-content-checklist.md).
-    // Structured data must describe final, visible content — enable after the answers are approved.
-    structuredData: false,
+    // The FAQ answers use only confirmed business facts and the services shown on the site, and every answer is
+    // rendered on the page. Turn this off again if unconfirmed answers are added.
+    structuredData: true,
   },
   admin: { sessionMaxAgeSeconds: 12 * 60 * 60 },
 });

@@ -18,6 +18,7 @@ import { createLeadSchema } from "@/lookup/leads/schema";
 import { leadSource } from "@/lookup/leads/source";
 import { findRedirectLoop, isValidDestination, normalizePath } from "@/lookup/redirects";
 import { safeHref, safeImageSrc } from "@/lookup/richtext";
+import { localBusinessSchema, siteSchemas } from "@/lookup/schema";
 import { getSiteEnvironment, isGtmAllowed, isProductionSite } from "@/lookup/runtime";
 import { buildAdminCsp, buildPublicCsp } from "@/lookup/security/csp";
 import { composeMetadata, latestTimestamp } from "@/lookup/seo-model";
@@ -46,6 +47,24 @@ describe("site settings", () => {
     expect(phoneHref("(415) 555-0100", { countryCallingCode: "1", nationalTrunkPrefix: "" })).toBe("tel:+4155550100");
     expect(phoneHref("+1 415 555 0100", { countryCallingCode: "972", nationalTrunkPrefix: "0" })).toBe("tel:+14155550100");
     expect(phoneHref("", siteConfig.phone)).toBe("");
+  });
+});
+
+describe("structured data", () => {
+  const settings = mergeSiteSettings(
+    { business_name: "Example Business", phone: "050-000-0000", local_business_schema_enabled: true },
+    siteConfig,
+    "example.com",
+  );
+
+  it("adds the configured service area to LocalBusiness", () => {
+    const schema = localBusinessSchema(settings, siteConfig);
+    expect(schema.areaServed).toBe(siteConfig.business.serviceArea);
+    expect(schema["@type"]).toEqual(siteConfig.schema.businessTypes);
+  });
+
+  it("never emits review or rating data", () => {
+    expect(JSON.stringify(siteSchemas(settings, siteConfig))).not.toMatch(/Review|Rating/);
   });
 });
 
