@@ -40,7 +40,8 @@ export default async function EditPostPage({ params }: PageProps<"/admin/posts/[
           </div>
         }
       />
-      <PostForm key={post.updated_at} post={post} />
+      {/* Keyed by id, not updated_at: a remount after saving would wipe the save confirmation message. */}
+      <PostForm key={post.id} post={post} />
     </>
   );
 }

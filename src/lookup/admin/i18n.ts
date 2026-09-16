@@ -23,6 +23,9 @@ const he = {
     overRecommended: "ארוך מהמומלץ — עלול להיחתך בתוצאות החיפוש",
     maxChars: (max: number) => `עד ${max} תווים`,
     required: "שדה חובה",
+    notFoundTitle: "הפריט לא נמצא",
+    notFoundDescription: "ייתכן שהוא נמחק או שהקישור שגוי.",
+    backToDashboard: "חזרה לדשבורד",
   },
   nav: {
     title: "ניהול האתר",

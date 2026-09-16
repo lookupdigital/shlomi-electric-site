@@ -36,13 +36,15 @@ function countImages(editor: Editor): number {
 }
 
 /**
- * Inserts an image as a top-level block. When the cursor is inside a quote or a list (where an inline insert
- * silently fails), the image is placed directly after that block. Returns false if nothing was inserted.
+ * Inserts an image as a top-level block, directly after the block that holds the cursor — so it never splits a
+ * paragraph mid-word and still works inside a quote or a list (where an inline insert silently fails). An empty
+ * paragraph is replaced by the image. Returns false if nothing was inserted.
  */
 export function insertImage(editor: Editor, attrs: { src: string; alt: string }): boolean {
   const before = countImages(editor);
   const { $from } = editor.state.selection;
-  if ($from.depth > 1) {
+  const inEmptyParagraph = $from.depth === 1 && $from.parent.isTextblock && $from.parent.content.size === 0;
+  if ($from.depth >= 1 && !inEmptyParagraph) {
     editor.chain().focus().insertContentAt($from.after(1), { type: "image", attrs }).run();
   } else {
     editor.chain().focus().setImage(attrs).run();
