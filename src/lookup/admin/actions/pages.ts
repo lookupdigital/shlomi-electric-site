@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { updateTag } from "next/cache";
 import { z } from "zod";
 import { checkbox, firstIssue, formEntries, httpUrl, imageUrl, optional, type FormState } from "@/lookup/admin/form-utils";
 import { t } from "@/lookup/admin/i18n";
+import { revalidatePublicSite } from "@/lookup/admin/revalidate";
 import { requireAdmin } from "@/lookup/auth";
 import { PAGE_SEO_TAG } from "@/lookup/seo";
 import { siteConfig } from "@/site.config";
@@ -34,6 +35,6 @@ export async function savePageSeo(formData: FormData): Promise<FormState> {
   if (!data?.length) return { ok: false, message: t.common.noPermission };
 
   updateTag(PAGE_SEO_TAG);
-  revalidatePath("/", "layout");
+  revalidatePublicSite();
   return { ok: true, message: t.pages.saved };
 }
