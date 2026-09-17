@@ -41,7 +41,6 @@ export default function Reviews() {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   const go = (index: number) => setActive((index + total) % total);
-  const review = reviews[active];
 
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key === "ArrowLeft") {
@@ -75,36 +74,46 @@ export default function Reviews() {
           onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
           onTouchEnd={handleTouchEnd}
         >
-          <article
-            key={active}
-            aria-live="polite"
-            className="fade-in flex min-h-[340px] flex-col gap-6 rounded-xl bg-graphite p-7 shadow-[0_8px_24px_rgba(22,38,61,0.16)] sm:p-10"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <p className="font-heading text-sm font-semibold text-brand">{review.company}</p>
-              <span aria-hidden="true" className="font-heading text-4xl leading-none text-brand/60">
-                ”
-              </span>
-            </div>
+          {/* Every testimonial is rendered into the HTML so search engines see all of them; only the
+              selected one is displayed. Switching active state remounts the card, which replays the fade. */}
+          <div aria-live="polite">
+            {reviews.map((review, i) => {
+              const isActive = i === active;
+              return (
+                <article
+                  key={isActive ? `review-${i}-active` : `review-${i}`}
+                  className={`${
+                    isActive ? "fade-in flex" : "hidden"
+                  } min-h-[340px] flex-col gap-6 rounded-xl bg-graphite p-7 shadow-[0_8px_24px_rgba(22,38,61,0.16)] sm:p-10`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="font-heading text-sm font-semibold text-brand">{review.company}</p>
+                    <span aria-hidden="true" className="font-heading text-4xl leading-none text-brand/60">
+                      ”
+                    </span>
+                  </div>
 
-            <div className="flex flex-1 flex-col gap-4 text-[15px] leading-[1.9] text-[#cbd5e0] sm:text-base">
-              {review.paragraphs.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </div>
+                  <div className="flex flex-1 flex-col gap-4 text-[15px] leading-[1.9] text-[#cbd5e0] sm:text-base">
+                    {review.paragraphs.map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                  </div>
 
-            <footer className="flex items-center gap-3 border-t border-white/10 pt-6">
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand font-heading text-sm font-bold text-white">
-                {review.name.charAt(0)}
-              </span>
-              <span className="flex flex-col gap-0.5">
-                <span className="font-heading text-[15px] font-semibold text-white">{review.name}</span>
-                <span className="text-[13px] text-[#8a9bb0]">
-                  {review.role ? `${review.role}, ${review.company}` : review.company}
-                </span>
-              </span>
-            </footer>
-          </article>
+                  <footer className="flex items-center gap-3 border-t border-white/10 pt-6">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand font-heading text-sm font-bold text-white">
+                      {review.name.charAt(0)}
+                    </span>
+                    <span className="flex flex-col gap-0.5">
+                      <span className="font-heading text-[15px] font-semibold text-white">{review.name}</span>
+                      <span className="text-[13px] text-[#8a9bb0]">
+                        {review.role ? `${review.role}, ${review.company}` : review.company}
+                      </span>
+                    </span>
+                  </footer>
+                </article>
+              );
+            })}
+          </div>
 
           <div className="flex items-center justify-center gap-4">
             <ArrowButton direction="right" label="ההמלצה הקודמת" onClick={() => go(active - 1)} />
