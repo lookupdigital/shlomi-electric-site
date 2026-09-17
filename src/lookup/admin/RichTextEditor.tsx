@@ -1,0 +1,148 @@
+"use client";
+
+import Image from "@tiptap/extension-image";
+import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { t } from "@/lookup/admin/i18n";
+import { ACCEPTED_IMAGE_TYPES, uploadImage } from "@/lookup/media";
+
+const EMPTY_DOC: JSONContent = { type: "doc", content: [{ type: "paragraph" }] };
+const SAFE_LINK = /^(https?:\/\/|mailto:|tel:|\/(?!\/)|#)/i;
+
+function ToolbarButton({ label, active, onClick, children }: { label: string; active?: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      aria-pressed={active}
+      onClick={onClick}
+      className={`h-9 min-w-9 rounded-md px-2 font-heading text-sm font-semibold transition-colors ${
+        active ? "bg-navy text-white" : "bg-white text-ink hover:bg-mint"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function countImages(editor: Editor): number {
+  let count = 0;
+  editor.state.doc.descendants((node) => {
+    if (node.type.name === "image") count += 1;
+  });
+  return count;
+}
+
+/**
+ * Inserts an image as a top-level block, directly after the block that holds the cursor — so it never splits a
+ * paragraph mid-word and still works inside a quote or a list (where an inline insert silently fails). An empty
+ * paragraph is replaced by the image. Returns false if nothing was inserted.
+ */
+export function insertImage(editor: Editor, attrs: { src: string; alt: string }): boolean {
+  const before = countImages(editor);
+  const { $from } = editor.state.selection;
+  const inEmptyParagraph = $from.depth === 1 && $from.parent.isTextblock && $from.parent.content.size === 0;
+  if ($from.depth >= 1 && !inEmptyParagraph) {
+    editor.chain().focus().insertContentAt($from.after(1), { type: "image", attrs }).run();
+  } else {
+    editor.chain().focus().setImage(attrs).run();
+    if (countImages(editor) === before && $from.depth === 1) {
+      editor.chain().focus().insertContentAt($from.after(1), { type: "image", attrs }).run();
+    }
+  }
+  return countImages(editor) > before;
+}
+
+function Toolbar({ editor, onImage, uploading }: { editor: Editor; onImage: () => void; uploading: boolean }) {
+  const chain = () => editor.chain().focus();
+
+  function setLink() {
+    const previous = (editor.getAttributes("link").href as string | undefined) ?? "";
+    const input = window.prompt(t.editor.linkPrompt, previous);
+    if (input === null) return;
+    const href = input.trim();
+    if (href === "") {
+      chain().extendMarkRange("link").unsetLink().run();
+    } else if (!SAFE_LINK.test(href)) {
+      window.alert(t.editor.linkInvalid);
+    } else {
+      chain().extendMarkRange("link").setLink({ href }).run();
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1 border-b border-line bg-offwhite p-2" role="toolbar" aria-label={t.editor.toolbar}>
+      <ToolbarButton label={t.editor.paragraph} active={editor.isActive("paragraph")} onClick={() => chain().setParagraph().run()}>¶</ToolbarButton>
+      <ToolbarButton label={t.editor.heading2} active={editor.isActive("heading", { level: 2 })} onClick={() => chain().toggleHeading({ level: 2 }).run()}>H2</ToolbarButton>
+      <ToolbarButton label={t.editor.heading3} active={editor.isActive("heading", { level: 3 })} onClick={() => chain().toggleHeading({ level: 3 }).run()}>H3</ToolbarButton>
+      <ToolbarButton label={t.editor.bold} active={editor.isActive("bold")} onClick={() => chain().toggleBold().run()}><b>B</b></ToolbarButton>
+      <ToolbarButton label={t.editor.italic} active={editor.isActive("italic")} onClick={() => chain().toggleItalic().run()}><i>I</i></ToolbarButton>
+      <ToolbarButton label={t.editor.bulletList} active={editor.isActive("bulletList")} onClick={() => chain().toggleBulletList().run()}>•</ToolbarButton>
+      <ToolbarButton label={t.editor.orderedList} active={editor.isActive("orderedList")} onClick={() => chain().toggleOrderedList().run()}>1.</ToolbarButton>
+      <ToolbarButton label={t.editor.quote} active={editor.isActive("blockquote")} onClick={() => chain().toggleBlockquote().run()}>”</ToolbarButton>
+      <ToolbarButton label={t.editor.link} active={editor.isActive("link")} onClick={setLink}>🔗</ToolbarButton>
+      <ToolbarButton label={t.editor.image} onClick={onImage}>{uploading ? t.editor.uploading : "🖼"}</ToolbarButton>
+      <ToolbarButton label={t.editor.undo} onClick={() => chain().undo().run()}>↶</ToolbarButton>
+      <ToolbarButton label={t.editor.redo} onClick={() => chain().redo().run()}>↷</ToolbarButton>
+    </div>
+  );
+}
+
+/** Tiptap editor limited to the formats the public renderer supports. Submits JSON via a hidden input. */
+export default function RichTextEditor({ name, initialContent }: { name: string; initialContent: unknown }) {
+  const initial = initialContent && typeof initialContent === "object" ? (initialContent as JSONContent) : EMPTY_DOC;
+  const [json, setJson] = useState(() => JSON.stringify(initial));
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [2, 3] },
+        code: false,
+        codeBlock: false,
+        horizontalRule: false,
+        strike: false,
+        underline: false,
+        link: { openOnClick: false, autolink: true, defaultProtocol: "https", isAllowedUri: (url) => SAFE_LINK.test(url) },
+      }),
+      Image.configure({ inline: false, allowBase64: false }),
+    ],
+    content: initial,
+    editorProps: { attributes: { class: "rich-text min-h-[320px] px-5 py-4 focus:outline-none", dir: t.dir } },
+    onUpdate: ({ editor: current }) => setJson(JSON.stringify(current.getJSON())),
+  });
+
+  async function onFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !editor) return;
+    setUploading(true);
+    try {
+      const src = await uploadImage(file);
+      const alt = window.prompt(t.editor.altPrompt) ?? "";
+      if (!insertImage(editor, { src, alt: alt.trim() })) window.alert(t.editor.imageInsertFailed);
+    } catch (error) {
+      window.alert((error as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-line bg-white">
+      {editor ? (
+        <Toolbar editor={editor} onImage={() => fileInput.current?.click()} uploading={uploading} />
+      ) : (
+        <div className="h-[53px] border-b border-line bg-offwhite" />
+      )}
+      <EditorContent editor={editor} />
+      <input ref={fileInput} type="file" accept={ACCEPTED_IMAGE_TYPES.join(",")} className="hidden" onChange={onFile} />
+      <input type="hidden" name={name} value={json} />
+    </div>
+  );
+}

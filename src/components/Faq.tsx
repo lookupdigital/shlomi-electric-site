@@ -48,11 +48,14 @@ export default function Faq({ items, defaultOpen = [] }: Props) {
                     className={`shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}
                   />
                 </button>
-                {isOpen && (
-                  <p id={`${id}-${i}`} className="-mt-3 px-5 pb-5 text-[15px] leading-[1.7] text-muted sm:px-8 sm:pb-6">
-                    {item.a}
-                  </p>
-                )}
+                {/* Always rendered so answers are in the server HTML for search engines; toggled with `hidden`. */}
+                <p
+                  id={`${id}-${i}`}
+                  hidden={!isOpen}
+                  className="-mt-3 px-5 pb-5 text-[15px] leading-[1.7] text-muted sm:px-8 sm:pb-6"
+                >
+                  {item.a}
+                </p>
               </div>
             );
           })}

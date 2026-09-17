@@ -1,15 +1,24 @@
 "use client";
 
 import Image from "next/image";
-import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { useId, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { projectTypes } from "@/lib/site";
+import { track } from "@/lookup/analytics/events";
+import { ATTRIBUTION_KEYS, getStoredAttribution } from "@/lookup/attribution";
+import Turnstile, { waitForTurnstileToken } from "@/lookup/forms/Turnstile";
+import { submitLead } from "@/lookup/leads/actions";
+import { siteConfig } from "@/site.config";
 
 type Props = {
+  /** Identifies the form in the leads table and in analytics, e.g. "home_hero". */
+  formName: string;
   withEmail?: boolean;
   withConsent?: boolean;
   submitLabel?: string;
   className?: string;
 };
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
   return (
@@ -23,6 +32,7 @@ function Field({ id, label, children }: { id: string; label: string; children: R
 }
 
 export default function LeadForm({
+  formName,
   withEmail = false,
   withConsent = false,
   submitLabel = "קבלו הצעת מחיר",
@@ -31,11 +41,65 @@ export default function LeadForm({
   const id = useId();
   const [projectType, setProjectType] = useState("");
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  const [pending, startTransition] = useTransition();
+  const submitting = useRef(false);
+  const submissionId = useRef<string | null>(null);
+
+  function handleStart() {
+    if (started) return;
+    setStarted(true);
+    track({ event: "form_start", form_name: formName, page_path: window.location.pathname });
+  }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // אתר דמו: הטופס עדיין לא שולח את הפרטים לשום מקום. יחובר בהמשך (מייל / וואטסאפ / CRM).
-    setSent(true);
+    if (submitting.current) return;
+    submitting.current = true;
+    setStarted(true);
+
+    const form = e.currentTarget;
+    const page_path = window.location.pathname;
+    setError(null);
+
+    startTransition(async () => {
+      if (TURNSTILE_SITE_KEY) await waitForTurnstileToken(form);
+
+      const formData = new FormData(form);
+      // One id per form view: a retried request cannot create a second lead. Also used as the analytics event_id.
+      submissionId.current ??= crypto.randomUUID();
+      formData.set("form_name", formName);
+      formData.set("submission_id", submissionId.current);
+      if (withConsent) formData.set("consent_required", "1");
+
+      const attribution = getStoredAttribution();
+      for (const key of ATTRIBUTION_KEYS) {
+        const value = attribution?.[key];
+        if (value) formData.set(key, value);
+      }
+      formData.set("landing_page", attribution?.landing_page ?? page_path);
+      if (attribution?.referrer) formData.set("referrer", attribution.referrer);
+
+      try {
+        const result = await submitLead(formData);
+        if (result.ok) {
+          // The conversion fires only after the server confirmed the lead was stored.
+          track({ event: "generate_lead", form_name: formName, page_path, lead_type: result.leadType, event_id: result.eventId });
+          setSent(true);
+          return;
+        }
+        setError(result.error === "server" ? siteConfig.leads.messages.serverError : result.message);
+        track({ event: "form_submit_error", form_name: formName, page_path, error_type: result.error });
+      } catch {
+        setError(siteConfig.leads.messages.serverError);
+        track({ event: "form_submit_error", form_name: formName, page_path, error_type: "network" });
+      }
+      // Turnstile tokens are single-use: render a fresh widget before the next attempt.
+      if (TURNSTILE_SITE_KEY) setTurnstileKey((key) => key + 1);
+      submitting.current = false;
+    });
   }
 
   if (sent) {
@@ -51,7 +115,11 @@ export default function LeadForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className={`flex flex-col gap-6 rounded-xl bg-white p-6 sm:p-10 ${className}`}>
+    <form
+      onSubmit={handleSubmit}
+      onFocus={handleStart}
+      className={`flex flex-col gap-6 rounded-xl bg-white p-6 sm:p-10 ${className}`}
+    >
       <Field id={`${id}-name`} label="שם מלא">
         <input id={`${id}-name`} name="name" required autoComplete="name" placeholder="ישראל ישראלי" className="field" />
       </Field>
@@ -126,11 +194,25 @@ export default function LeadForm({
         </label>
       )}
 
+      {/* Honeypot for bots — hidden from people and assistive technology. */}
+      <input type="text" name="company_website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
+
+      {/* Loaded on first interaction so it costs nothing for visitors who never use the form. */}
+      {TURNSTILE_SITE_KEY && started && <Turnstile key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} />}
+
+      {error && (
+        <p role="alert" className="font-heading text-sm font-semibold text-red-700">
+          {error}
+        </p>
+      )}
+
       <button
         type="submit"
-        className="h-[46px] w-full rounded-lg bg-brand px-6 font-heading text-base font-semibold text-white transition-colors hover:bg-brand-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        disabled={pending}
+        aria-busy={pending}
+        className="h-[46px] w-full rounded-lg bg-brand px-6 font-heading text-base font-semibold text-white transition-colors hover:bg-brand-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {submitLabel}
+        {pending ? "שולחים…" : submitLabel}
       </button>
     </form>
   );

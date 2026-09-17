@@ -42,3 +42,11 @@ next-env.d.ts
 
 # local tooling
 /.claude
+
+# env template is safe to commit (names only)
+!.env.example
+
+# playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/

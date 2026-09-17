@@ -1,25 +1,31 @@
-import type { Metadata } from "next";
 import Image from "next/image";
 import Button from "@/components/Button";
 import CtaSection from "@/components/CtaSection";
 import Faq from "@/components/Faq";
 import Stats from "@/components/Stats";
+import { faqSchema, JsonLd } from "@/lookup/schema";
+import { buildPageMetadata } from "@/lookup/seo";
+import { getSiteSettings } from "@/lookup/settings";
+import { siteConfig } from "@/site.config";
 
-export const metadata: Metadata = {
-  title: "צור קשר",
-};
+export function generateMetadata() {
+  return buildPageMetadata({ path: "/contact", title: "צור קשר" });
+}
 
-// שאלות מהפיגמה; התשובות — טקסט זמני לאישור הלקוח.
-const faq = [
-  { q: "האם הפגישה הראשונה כרוכה בתשלום?", a: "לא. שיחת ההיכרות והפגישה הראשונה בשטח הן ללא עלות וללא התחייבות." },
-  { q: "תוך כמה זמן חוזרים אליי?", a: "אנחנו חוזרים לכל פנייה בהקדם, בדרך כלל עוד באותו יום עסקים." },
-  { q: "האם אתם עובדים גם בפרויקטים קטנים?", a: "כן. אנחנו מלווים פרויקטים בכל גודל — מתיקון נקודתי ועד הקמת משרד מלא." },
-  { q: "האם אפשר לבצע רק עבודות חשמל?", a: "בהחלט. ניתן להזמין עבודות חשמל בלבד, המבוצעות על ידי חשמלאי מוסמך." },
-  { q: "כמה זמן לוקח לקבל הצעת מחיר?", a: "לאחר הפגישה בשטח נשלח הצעת מחיר מסודרת ומפורטת תוך זמן קצר." },
-  { q: "האם אתם עובדים גם מחוץ למרכז?", a: "כן. צרו איתנו קשר ונבדוק יחד את פרטי הפרויקט והמיקום." },
+// Answers use only confirmed facts (the service area comes from Admin → Site settings) and what the site itself
+// offers — no prices, guarantees or response times. Distinct from the home page FAQ; emitted as FAQPage data.
+const staticFaq = [
+  { q: "איך אפשר ליצור איתכם קשר?", a: "אפשר להשאיר פרטים בטופס שבעמוד הזה, להתקשר או לשלוח הודעה ב-WhatsApp." },
+  { q: "איך נקבעת הצעת המחיר?", a: "הצעת המחיר נקבעת לפי היקף העבודה וסוג העבודות הנדרשות." },
+  { q: "אפשר לפרט על הפרויקט כבר בפנייה?", a: "כן. בטופס יש שדה הודעה שבו אפשר לתאר את הפרויקט." },
 ];
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const { serviceArea } = await getSiteSettings();
+  const faq = [
+    ...(serviceArea ? [{ q: "באילו אזורים אתם נותנים שירות?", a: `אזורי השירות שלנו: ${serviceArea}.` }] : []),
+    ...staticFaq,
+  ];
   return (
     <>
       <section className="bg-offwhite">
@@ -32,7 +38,7 @@ export default function ContactPage() {
                 מקצועי, מסודר ומדויק.
               </p>
             </div>
-            <Button href="#contact-form" variant="outline">
+            <Button href="#contact-form" variant="outline" trackCta="contact_hero">
               צרו קשר
             </Button>
           </div>
@@ -59,6 +65,7 @@ export default function ContactPage() {
 
       <CtaSection
         id="contact-form"
+        formName="contact"
         title="ספרו לנו על הפרויקט שלכם."
         subtitle="ניצור איתכם קשר בהקדם כדי להבין את הצרכים שלכם ולהציע פתרון שמתאים בדיוק לפרויקט."
         withEmail
@@ -66,6 +73,7 @@ export default function ContactPage() {
         submitLabel="שלחו פרטים"
       />
 
+      {siteConfig.faq.structuredData && <JsonLd data={faqSchema(faq)} />}
       <Faq items={faq} />
     </>
   );

@@ -6,7 +6,16 @@ import LeadForm from "@/components/LeadForm";
 import ProjectCard from "@/components/ProjectCard";
 import Reviews from "@/components/Reviews";
 import Stats from "@/components/Stats";
-import { projects, site } from "@/lib/site";
+import { projects } from "@/lib/site";
+import { faqSchema, JsonLd } from "@/lookup/schema";
+import { buildPageMetadata } from "@/lookup/seo";
+import { getSiteSettings } from "@/lookup/settings";
+import { whatsappHref } from "@/lookup/settings-model";
+import { siteConfig } from "@/site.config";
+
+export function generateMetadata() {
+  return buildPageMetadata({ path: "/" });
+}
 
 const services = [
   { icon: "lamp-desk", title: "שיפוץ משרדים", text: "התאמת משרדים קיימים לצרכים החדשים של העסק." },
@@ -28,17 +37,18 @@ const reasons = [
 
 const steps = ["שיחת היכרות", "פגישה בשטח", "הצעת מחיר מסודרת", "תחילת עבודה", "מסירת הפרויקט"];
 
-// שתי התשובות הראשונות מופיעות בפיגמה (טקסט דמו). שאר התשובות — טקסט זמני לאישור הלקוח.
+// Answers use only facts confirmed by the client (experience, customers, registered contractor, certified
+// electrician) and the services listed above — no prices, guarantees or response times. Emitted as FAQPage data.
 const faq = [
-  { q: "האם אתם עובדים בכל הארץ?", a: "כן — הצוות שלנו מנהל את כל תהליך ההיתרים, העמידה בתקנים והבדיקות כחלק מהפרויקט." },
-  { q: "האם אפשר להמשיך לעבוד בזמן השיפוץ?", a: "כן — הצוות שלנו מנהל את כל תהליך ההיתרים, העמידה בתקנים והבדיקות כחלק מהפרויקט." },
-  { q: "כמה זמן לוקח שיפוץ משרד?", a: "משך העבודה תלוי בהיקף הפרויקט. לאחר הפגישה בשטח נציג לוח זמנים מסודר ונעמוד בו." },
-  { q: "איך נקבעת הצעת המחיר?", a: "הצעת המחיר נקבעת לאחר פגישה בשטח, בהתאם להיקף העבודה, לחומרים ולדרישות שלכם — מפורטת ושקופה." },
-  { q: "האם אתם מספקים את כל בעלי המקצוע?", a: "כן. אנחנו מנהלים את כל בעלי המקצוע בפרויקט, כך שאתם עובדים מול גורם אחד בלבד." },
-  { q: "האם יש אחריות?", a: "כן. פרטי האחריות מותאמים לסוג העבודה ומפורטים בהצעת המחיר." },
+  { q: "אילו עבודות אתם מבצעים?", a: "שיפוץ והקמת משרדים, עבודות חשמל, עבודות גבס, אינסטלציה ועבודות גמר." },
+  { q: "כמה ניסיון יש לכם?", a: "מעל 27 שנות ניסיון, ויותר מ-2,000 לקוחות." },
+  { q: "האם אתם קבלן רשום?", a: "כן. אנחנו קבלן רשום, ועבודות החשמל מבוצעות על ידי חשמלאי מוסמך." },
+  { q: "כמה זמן לוקח פרויקט?", a: "משך העבודה תלוי בהיקף הפרויקט ובסוג העבודות הנדרשות." },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const settings = await getSiteSettings();
+  const whatsapp = whatsappHref(settings.whatsapp, siteConfig.phone);
   return (
     <>
       {/* Hero */}
@@ -56,9 +66,11 @@ export default function Home() {
                 התכנון ועד למסירת הפרויקט.
               </p>
             </div>
-            <Button href={site.whatsappHref} variant="outline">
-              שוחחו איתנו ב-WhatsApp
-            </Button>
+            {whatsapp && (
+              <Button href={whatsapp} variant="outline" trackCta="hero_whatsapp">
+                שוחחו איתנו ב-WhatsApp
+              </Button>
+            )}
           </div>
 
           <div className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl px-4 py-10 sm:px-[89px] sm:py-[96px] xl:max-w-[634px] xl:flex-1">
@@ -70,7 +82,7 @@ export default function Home() {
               sizes="(min-width: 1280px) 634px, 100vw"
               className="object-cover"
             />
-            <LeadForm className="relative w-full max-w-[436px] shadow-[0_0_2.5px_rgba(0,0,0,0.25)]" />
+            <LeadForm formName="home_hero" className="relative w-full max-w-[436px] shadow-[0_0_2.5px_rgba(0,0,0,0.25)]" />
           </div>
         </div>
       </section>
@@ -194,7 +206,7 @@ export default function Home() {
               <ProjectCard key={project.title} project={project} />
             ))}
           </div>
-          <Button href="/projects" variant="outline">
+          <Button href="/projects" variant="outline" trackCta="home_more_projects">
             לצפייה בעוד פרויקטים
           </Button>
         </div>
@@ -202,10 +214,12 @@ export default function Home() {
 
       <Reviews />
 
+      {siteConfig.faq.structuredData && <JsonLd data={faqSchema(faq)} />}
       <Faq items={faq} defaultOpen={[0, 1]} />
 
       <CtaSection
         id="quote-form"
+        formName="home_cta"
         title="יש לכם פרויקט שמתוכנן בקרוב?"
         subtitle="נשמח להכיר את הצרכים שלכם ולהציע פתרון מקצועי שמותאם בדיוק לעסק שלכם."
       />

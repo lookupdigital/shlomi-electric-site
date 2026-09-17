@@ -1,18 +1,5 @@
-// פרטי יצירת קשר — כרגע ערכי דמו מהפיגמה. להחלפה במספרים האמיתיים של הלקוח.
-export const site = {
-  name: "שלומי שירותי חשמל וקבלנות",
-  phoneDisplay: "03-555-1234",
-  phoneHref: "tel:+97235551234",
-  whatsappHref: "https://wa.me/972500000000",
-  email: "info@nidbach.co.il",
-  address: "רחוב הברזל 30, תל אביב",
-};
-
-export const navLinks = [
-  { href: "/", label: "בית" },
-  { href: "/projects", label: "פרויקטים" },
-  { href: "/contact", label: "צור קשר" },
-];
+// Client-specific page content. Business contact details live in /admin/settings; navigation comes from
+// siteConfig.routes (src/site.config.ts).
 
 export const projectTypes = [
   "עבודות חשמל",
@@ -31,8 +18,9 @@ export type Review = {
   company: string;
 };
 
-// המלצות אמיתיות, מתוך מכתבי ההמלצה. הטקסט מועתק כלשונו ואין לערוך אותו.
-// מספרי ת.ז שהופיעו במכתב המקורי הושמטו במכוון ואין להחזיר אותם לאתר.
+// REAL CLIENT CONTENT — quoted verbatim from three signed recommendation letters (September 2026). Do not reword,
+// shorten or paraphrase. Personal ID numbers that appeared in the original letters are deliberately omitted and
+// must not be restored. The letters give no star rating, so never emit AggregateRating from this content.
 export const reviews: Review[] = [
   {
     paragraphs: [
@@ -67,6 +55,10 @@ export const reviews: Review[] = [
 
 export type Project = { image: string; category: string; title: string };
 
+// MANDATORY PRE-LAUNCH REPLACEMENT — the projects and their images below are TEMPORARY DEMO CONTENT from the
+// Figma template (not this business, not verified). They keep the Preview visually complete until the client's real
+// projects and photos arrive, and must be replaced before Production (docs/launch-content-checklist.md).
+// Never emit project structured data from this content.
 export const projects: Project[] = [
   { image: "/images/project-crestview.png", category: "שחזור מבנה מסחרי", title: "המרכז הרפואי קרסטויו" },
   { image: "/images/project-harbor.png", category: "שיפוץ מקיף", title: "משרדי עורכי דין הארבור פוינט" },

@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
 import Image from "next/image";
 import CtaSection from "@/components/CtaSection";
 import ProjectCard from "@/components/ProjectCard";
 import Reviews from "@/components/Reviews";
 import Stats from "@/components/Stats";
 import { projects } from "@/lib/site";
+import { buildPageMetadata } from "@/lookup/seo";
 
-export const metadata: Metadata = {
-  title: "פרויקטים",
-};
+export function generateMetadata() {
+  return buildPageMetadata({ path: "/projects", title: "פרויקטים" });
+}
 
 const collage = [
   { src: "/images/projects-hero-3.png", alt: "וילה עם בריכה בתאורת ערב" },
@@ -16,8 +16,7 @@ const collage = [
   { src: "/images/projects-hero-1.png", alt: "בניין משרדים מזכוכית" },
 ];
 
-// בפיגמה כל 6 הכרטיסים זהים (דמו) — בינתיים מוצגים הפרויקטים הקיימים פעמיים.
-const grid = [...projects, ...projects];
+// MANDATORY PRE-LAUNCH REPLACEMENT: the collage images are temporary demo/stock images (docs/launch-content-checklist.md).
 
 export default function ProjectsPage() {
   return (
@@ -45,8 +44,8 @@ export default function ProjectsPage() {
         <div className="container-x flex flex-col gap-12 py-16 lg:py-24">
           <h2 className="h2 text-center text-navy">עבודות נבחרות</h2>
           <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-            {grid.map((project, i) => (
-              <ProjectCard key={i} project={project} />
+            {projects.map((project) => (
+              <ProjectCard key={project.title} project={project} />
             ))}
           </div>
         </div>
@@ -67,6 +66,7 @@ export default function ProjectsPage() {
 
       <CtaSection
         id="quote-form"
+        formName="projects_cta"
         title="רוצים לראות איך הפרויקט שלכם יכול להיראות?"
         subtitle="נשמח להגיע, להבין את הצרכים שלכם ולהציע פתרון מקצועי שמתאים בדיוק אליכם."
       />

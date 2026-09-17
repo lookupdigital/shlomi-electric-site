@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Assistant, Heebo } from "next/font/google";
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
-import { site } from "@/lib/site";
+import Analytics from "@/lookup/analytics/Analytics";
+import { isGtmAllowed } from "@/lookup/runtime";
+import { getSiteSettings, isIndexable } from "@/lookup/settings";
+import { siteIconUrl } from "@/lookup/settings-model";
+import { siteConfig } from "@/site.config";
 import "./globals.css";
 
 const heebo = Heebo({
@@ -15,22 +17,50 @@ const assistant = Assistant({
   subsets: ["hebrew", "latin"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: site.name,
-    template: `%s | ${site.name}`,
-  },
-  description:
-    "מעל 27 שנות ניסיון בשיפוץ, הקמה ועבודות גמר למשרדים ועסקים. קבלן רשום, חשמלאי מוסמך וליווי מלא – משלב התכנון ועד למסירת הפרויקט.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  const indexable = isIndexable(settings);
+  return {
+    metadataBase: new URL(settings.siteUrl),
+    applicationName: settings.siteName,
+    title: {
+      default: settings.defaultMetaTitle || settings.siteName,
+      template: `%s | ${settings.siteName}`,
+    },
+    description: settings.defaultMetaDescription || undefined,
+    robots: { index: indexable, follow: indexable },
+    openGraph: { type: "website", locale: siteConfig.locale.ogLocale, siteName: settings.siteName },
+    // The admin favicon (or the logo) is the only icon: there is no static app/favicon.ico to override it.
+    icons: { icon: siteIconUrl(settings), apple: siteIconUrl(settings) },
+  };
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+const GTM_ID_PATTERN = /^GTM-[A-Z0-9]{4,12}$/;
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const settings = await getSiteSettings();
+  const { gtmId, ga4Id, metaPixelId, tiktokPixelId, linkedinPartnerId } = settings.tracking;
+  // GTM loads only in the production environment (or with LOOKUP_GTM_DEBUG=1), never locally by accident.
+  const loadGtm = isGtmAllowed() && GTM_ID_PATTERN.test(gtmId);
+
   return (
-    <html lang="he" dir="rtl" className={`${heebo.variable} ${assistant.variable} h-full antialiased`}>
+    <html
+      lang={siteConfig.locale.htmlLang}
+      dir={siteConfig.locale.dir}
+      className={`${heebo.variable} ${assistant.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        {children}
+        <Analytics
+          gtmId={loadGtm ? gtmId : null}
+          consentDefault={settings.consentDefault}
+          trackingConfig={{
+            ga4_measurement_id: ga4Id,
+            meta_pixel_id: metaPixelId,
+            tiktok_pixel_id: tiktokPixelId,
+            linkedin_partner_id: linkedinPartnerId,
+          }}
+        />
       </body>
     </html>
   );

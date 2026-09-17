@@ -13,11 +13,14 @@ type Props = {
   href: string;
   variant?: keyof typeof variants;
   className?: string;
+  /** Sends a cta_click analytics event with this name (handled by the central analytics listener). */
+  trackCta?: string;
   children: ReactNode;
 };
 
-export default function Button({ href, variant = "primary", className = "", children }: Props) {
+export default function Button({ href, variant = "primary", className = "", trackCta, children }: Props) {
   const cls = `${base} ${variants[variant]} ${className}`;
+  const tracking = trackCta ? { "data-track-cta": trackCta } : {};
 
   if (/^(https?:|tel:|mailto:)/.test(href)) {
     const newTab = href.startsWith("http");
@@ -25,6 +28,7 @@ export default function Button({ href, variant = "primary", className = "", chil
       <a
         href={href}
         className={cls}
+        {...tracking}
         {...(newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       >
         {children}
@@ -33,7 +37,7 @@ export default function Button({ href, variant = "primary", className = "", chil
   }
 
   return (
-    <Link href={href} className={cls}>
+    <Link href={href} className={cls} {...tracking}>
       {children}
     </Link>
   );
