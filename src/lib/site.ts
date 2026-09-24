@@ -53,14 +53,80 @@ export const reviews: Review[] = [
   },
 ];
 
-export type Project = { image: string; category: string; title: string };
+export type ProjectImage = { src: string; alt: string };
 
-// MANDATORY PRE-LAUNCH REPLACEMENT — the projects and their images below are TEMPORARY DEMO CONTENT from the
-// Figma template (not this business, not verified). They keep the Preview visually complete until the client's real
-// projects and photos arrive, and must be replaced before Production (docs/launch-content-checklist.md).
-// Never emit project structured data from this content.
+export type Project = {
+  slug: string;
+  title: string;
+  /** Gold line above the title. Rendered only when set — left empty until the client confirms the scope of work. */
+  category?: string;
+  /** First image is the card cover. Source files: "תמונות פרויקטים" in the repo root. */
+  images: ProjectImage[];
+};
+
+// REAL CLIENT PROJECTS — photographs supplied by the client (September 2026).
 export const projects: Project[] = [
-  { image: "/images/project-crestview.png", category: "שחזור מבנה מסחרי", title: "המרכז הרפואי קרסטויו" },
-  { image: "/images/project-harbor.png", category: "שיפוץ מקיף", title: "משרדי עורכי דין הארבור פוינט" },
-  { image: "/images/project-meridian.png", category: "בנייה מלאה", title: "משרדי מרידיאן טק" },
+  {
+    slug: "sason-hogi",
+    title: "קבוצת ששון חוגי",
+    images: [
+      { src: "/images/projects/sason-hogi/1.jpg", alt: "לובי הקבלה במשרדי קבוצת ששון חוגי, עם דלפק קבלה ופרקט כהה" },
+      { src: "/images/projects/sason-hogi/2.jpg", alt: "פינת עבודה וישיבה מול חלונות במשרדי קבוצת ששון חוגי" },
+      { src: "/images/projects/sason-hogi/3.jpg", alt: "חדר ישיבות עם שולחן ארוך ומסך במשרדי קבוצת ששון חוגי" },
+    ],
+  },
+  {
+    slug: "dani-levy",
+    title: "דני לוי תקשורת",
+    images: [
+      { src: "/images/projects/dani-levy/1.jpg", alt: "פינת אוכל מול חלונות פנורמיים במשרדי דני לוי תקשורת" },
+      { src: "/images/projects/dani-levy/2.jpg", alt: "מסדרון עם פינות ישיבה ותמונות ממוסגרות במשרדי דני לוי תקשורת" },
+      { src: "/images/projects/dani-levy/3.jpg", alt: "חדר עם ספרייה ושולחן ישיבות במשרדי דני לוי תקשורת" },
+      { src: "/images/projects/dani-levy/4.jpg", alt: "אזור הקבלה ועמדת העבודה במשרדי דני לוי תקשורת" },
+    ],
+  },
+  {
+    slug: "sightec",
+    title: "SIGHTEC",
+    images: [
+      { src: "/images/projects/sightec/1.jpg", alt: "פינת ישיבה מול חלונות פנורמיים במשרדי SIGHTEC" },
+      { src: "/images/projects/sightec/2.jpg", alt: "אופן ספייס עם עמדות עבודה במשרדי SIGHTEC" },
+      { src: "/images/projects/sightec/3.jpg", alt: "מטבחון עם לוגו החברה במשרדי SIGHTEC" },
+    ],
+  },
+  {
+    slug: "biolight",
+    title: "BioLight",
+    images: [
+      { src: "/images/projects/biolight/1.jpg", alt: "משרד עם מחיצות זכוכית ופינת המתנה במשרדי BioLight" },
+      { src: "/images/projects/biolight/2.jpg", alt: "חדר עבודה מאחורי מחיצת זכוכית במשרדי BioLight" },
+      { src: "/images/projects/biolight/3.jpg", alt: "חדר עבודה מול חלונות עם נוף עירוני במשרדי BioLight" },
+      { src: "/images/projects/biolight/4.jpg", alt: "מסדרון עם תמונות על הקירות במשרדי BioLight" },
+    ],
+  },
+  {
+    slug: "reveal-security",
+    title: "RevealSecurity",
+    images: [
+      { src: "/images/projects/reveal-security/1.jpg", alt: "פינת המתנה מוארת עם ספות במשרדי RevealSecurity" },
+      { src: "/images/projects/reveal-security/2.jpg", alt: "חדר ישיבות עם שולחן ארוך במשרדי RevealSecurity" },
+      { src: "/images/projects/reveal-security/3.jpg", alt: "פינת ישיבה עם ספות ושולחנות עגולים במשרדי RevealSecurity" },
+      { src: "/images/projects/reveal-security/4.jpg", alt: "חדר עבודה עם שולחן וכיסאות במשרדי RevealSecurity" },
+    ],
+  },
+  {
+    slug: "dan-hai-law",
+    title: "משרד עורכי דין דן חי ושות׳",
+    images: [
+      { src: "/images/projects/dan-hai-law/1.jpg", alt: "אזור הקבלה וחדר ישיבות מאחורי קיר זכוכית במשרד עורכי דין דן חי ושות׳" },
+      { src: "/images/projects/dan-hai-law/2.jpg", alt: "חדר עבודה במשרד עורכי דין דן חי ושות׳" },
+      { src: "/images/projects/dan-hai-law/3.jpg", alt: "מסדרון המשרד במשרד עורכי דין דן חי ושות׳" },
+      { src: "/images/projects/dan-hai-law/4.jpg", alt: "אופן ספייס עם עמדות עבודה במשרד עורכי דין דן חי ושות׳" },
+    ],
+  },
 ];
+
+/** The three projects shown on the home page, in this order. The /projects page shows all of them. */
+export const featuredProjects: Project[] = ["sason-hogi", "dani-levy", "sightec"].map(
+  (slug) => projects.find((project) => project.slug === slug)!,
+);

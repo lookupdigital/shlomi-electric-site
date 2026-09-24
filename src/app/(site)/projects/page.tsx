@@ -1,6 +1,6 @@
 import Image from "next/image";
 import CtaSection from "@/components/CtaSection";
-import ProjectCard from "@/components/ProjectCard";
+import ProjectsGrid from "@/components/ProjectsGrid";
 import Reviews from "@/components/Reviews";
 import Stats from "@/components/Stats";
 import { projects } from "@/lib/site";
@@ -43,11 +43,7 @@ export default function ProjectsPage() {
       <section>
         <div className="container-x flex flex-col gap-12 py-16 lg:py-24">
           <h2 className="h2 text-center text-navy">עבודות נבחרות</h2>
-          <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
-              <ProjectCard key={project.title} project={project} />
-            ))}
-          </div>
+          <ProjectsGrid projects={projects} className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3" />
         </div>
       </section>
 

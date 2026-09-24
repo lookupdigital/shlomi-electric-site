@@ -3,10 +3,10 @@ import Button from "@/components/Button";
 import CtaSection from "@/components/CtaSection";
 import Faq from "@/components/Faq";
 import LeadForm from "@/components/LeadForm";
-import ProjectCard from "@/components/ProjectCard";
+import ProjectsGrid from "@/components/ProjectsGrid";
 import Reviews from "@/components/Reviews";
 import Stats from "@/components/Stats";
-import { projects } from "@/lib/site";
+import { featuredProjects } from "@/lib/site";
 import { faqSchema, JsonLd } from "@/lookup/schema";
 import { buildPageMetadata } from "@/lookup/seo";
 import { getSiteSettings } from "@/lookup/settings";
@@ -201,11 +201,10 @@ export default async function Home() {
       <section>
         <div className="container-x flex flex-col items-center gap-12 py-16 lg:py-20">
           <h2 className="h2 text-center">כמה מהפרויקטים שביצענו</h2>
-          <div className="grid w-full gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
-              <ProjectCard key={project.title} project={project} />
-            ))}
-          </div>
+          <ProjectsGrid
+            projects={featuredProjects}
+            className="grid w-full gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
+          />
           <Button href="/projects" variant="outline" trackCta="home_more_projects">
             לצפייה בעוד פרויקטים
           </Button>

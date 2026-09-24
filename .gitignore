@@ -50,3 +50,6 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# Original client photos (source material). The web-ready copies live in public/images/projects.
+תמונות פרויקטים/
