@@ -185,7 +185,7 @@ export default async function Home() {
                 )}
                 <div className="flex justify-center lg:flex-1 lg:justify-start">
                   <div className="flex w-[180px] flex-col items-center gap-3">
-                    <span className="grid size-12 place-items-center rounded-full bg-mint font-heading text-lg font-semibold text-brand">
+                    <span className="grid size-12 place-items-center rounded-full bg-mint font-heading text-lg font-semibold text-navy">
                       {i + 1}
                     </span>
                     <span className="text-center font-heading text-base font-semibold">{step}</span>

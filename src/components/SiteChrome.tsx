@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import AccessibilityWidget from "@/components/AccessibilityWidget";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { getPublishedPosts } from "@/lookup/posts";
@@ -20,7 +21,7 @@ export default async function SiteChrome({ settings, children }: { settings: Sit
   return (
     <>
       <Header siteName={settings.siteName} logoUrl={settings.logoUrl} phoneDisplay={settings.phone} phoneHref={tel} links={links} />
-      <main className="flex-1">{children}</main>
+      <main id="main" className="flex-1">{children}</main>
       <Footer
         businessName={settings.businessName}
         phoneDisplay={settings.phone}
@@ -30,6 +31,7 @@ export default async function SiteChrome({ settings, children }: { settings: Sit
         serviceArea={settings.serviceArea}
         links={links}
       />
+      <AccessibilityWidget />
     </>
   );
 }

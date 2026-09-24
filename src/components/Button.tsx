@@ -5,7 +5,7 @@ const base =
   "inline-flex h-[46px] items-center justify-center whitespace-nowrap rounded-lg px-6 font-heading text-base font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
 const variants = {
-  primary: "bg-brand text-white hover:bg-brand-dark",
+  primary: "bg-brand text-navy hover:bg-brand-dark",
   outline: "border-2 border-navy text-navy hover:bg-navy hover:text-white",
 };
 

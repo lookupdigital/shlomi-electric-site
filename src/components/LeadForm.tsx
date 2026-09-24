@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useId, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { projectTypes } from "@/lib/site";
 import { track } from "@/lookup/analytics/events";
@@ -190,7 +191,18 @@ export default function LeadForm({
       {withConsent && (
         <label className="flex items-center gap-3 text-[13px] text-graphite">
           <input type="checkbox" name="consent" required className="consent" />
-          אני מאשר/ת יצירת קשר בהתאם למדיניות הפרטיות.
+          <span>
+            {"אני מאשר/ת יצירת קשר בהתאם ל"}
+            <Link
+              href="/privacy"
+              className="underline underline-offset-2 transition-colors hover:text-brand-dark"
+              // Inside a <label>, a plain click would also toggle the checkbox.
+              onClick={(e) => e.stopPropagation()}
+            >
+              מדיניות הפרטיות
+            </Link>
+            .
+          </span>
         </label>
       )}
 
@@ -210,7 +222,7 @@ export default function LeadForm({
         type="submit"
         disabled={pending}
         aria-busy={pending}
-        className="h-[46px] w-full rounded-lg bg-brand px-6 font-heading text-base font-semibold text-white transition-colors hover:bg-brand-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-70"
+        className="h-[46px] w-full rounded-lg bg-brand px-6 font-heading text-base font-semibold text-navy transition-colors hover:bg-brand-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-70"
       >
         {pending ? "שולחים…" : submitLabel}
       </button>

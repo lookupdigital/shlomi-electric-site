@@ -53,13 +53,16 @@ export default function Footer({ businessName, phoneDisplay, phoneHref, email, a
 
         <div className="flex flex-col-reverse gap-4 text-[13px] sm:flex-row sm:items-center sm:justify-between">
           <p className="opacity-50">{`© כל הזכויות שמורות ל${businessName}.`}</p>
-          <div className="flex gap-6">
-            <a href="#" className="opacity-50 transition-opacity hover:opacity-100">
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <Link href="/terms" className="opacity-50 transition-opacity hover:opacity-100">
               תנאי שימוש
-            </a>
-            <a href="#" className="opacity-50 transition-opacity hover:opacity-100">
+            </Link>
+            <Link href="/privacy" className="opacity-50 transition-opacity hover:opacity-100">
               מדיניות פרטיות
-            </a>
+            </Link>
+            <Link href="/accessibility" className="opacity-50 transition-opacity hover:opacity-100">
+              הצהרת נגישות
+            </Link>
           </div>
         </div>
       </div>

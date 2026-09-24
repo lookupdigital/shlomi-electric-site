@@ -100,7 +100,7 @@ export default function Reviews() {
                   </div>
 
                   <footer className="flex items-center gap-3 border-t border-white/10 pt-6">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand font-heading text-sm font-bold text-white">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand font-heading text-sm font-bold text-navy">
                       {review.name.charAt(0)}
                     </span>
                     <span className="flex flex-col gap-0.5">

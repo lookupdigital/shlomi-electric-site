@@ -114,6 +114,30 @@ body {
   }
 }
 
+/* Keyboard users: a visible focus ring on every interactive element. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-dark);
+  outline-offset: 2px;
+}
+
+/* "Skip to content" — off-screen until it receives keyboard focus. */
+.skip-link {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: -200px;
+  z-index: 100;
+  border-radius: 0 0 8px 8px;
+  background: var(--color-navy);
+  padding: 12px 20px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: white;
+  transition: top 0.15s ease-out;
+}
+.skip-link:focus {
+  top: 0;
+}
+
 @keyframes fade-in-up {
   from {
     opacity: 0;

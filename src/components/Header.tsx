@@ -23,6 +23,9 @@ export default function Header({ siteName, logoUrl, phoneDisplay, phoneHref, lin
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-white">
+      <a href="#main" className="skip-link">
+        דלג לתוכן
+      </a>
       <div className="container-x flex h-16 items-center justify-between lg:h-20">
         <div className="flex items-center gap-12">
           <Link href="/" aria-label="דף הבית" onClick={close}>

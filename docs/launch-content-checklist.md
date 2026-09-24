@@ -10,7 +10,7 @@ Preview and Production share one Supabase project: settings saved in the admin a
 | ☐ | Blocker | Details |
 | --- | --- | --- |
 | ☑ | **Real reviews** | Done — three signed client letters, quoted verbatim (section 2) |
-| ☐ | **Real projects** | Replace the demo projects (section 2) |
+| ☑ | **Real projects** | Done — six real client projects with the photographs they supplied (section 2) |
 | ☐ | **Real photos** | Replace every demo/stock image (section 2) |
 | ☐ | **Privacy Policy** | Text from the client/legal counsel; page + links (section 4) |
 | ☐ | **Terms of use** | Text from the client/legal counsel; page + link (section 4) |
@@ -46,8 +46,8 @@ as verified. No structured data is generated from it.
 | ☐ | Item | Location |
 | --- | --- | --- |
 | ☑ | **Reviews** — replaced with three real signed client letters (Ariel Assets Group, Sason Hogi Group, N. Feinberg & Co.), quoted verbatim; the ID numbers printed in one letter are deliberately omitted. The letters give no star rating, so no AggregateRating | `src/lib/site.ts` → `reviews` (home + /projects) |
-| ☐ | **Projects** — 3 demo projects (names, categories) | `src/lib/site.ts` → `projects` (home + /projects) |
-| ☐ | **Project photos** | `public/images/project-crestview.png`, `project-harbor.png`, `project-meridian.png` |
+| ☑ | **Projects** — replaced with six real client projects. The gold category line is intentionally empty until the client confirms the scope of work on each site | `src/lib/site.ts` → `projects` (home + /projects) |
+| ☑ | **Project photos** — 22 photographs supplied by the client, resized and compressed | `public/images/projects/<slug>/` |
 | ☐ | **Other demo/stock photos** (and their alt texts) | `hero-office.png`, `problem.png`, `solution.png` (home); `contact-hero-1.png`, `contact-hero-2.png` (/contact); `projects-hero-1.png`, `projects-hero-2.png`, `projects-hero-3.png` (/projects) |
 
 ## 3. Copy to confirm with the client
@@ -69,9 +69,11 @@ reword or remove before Production.
 
 | ☐ | Item | Current state |
 | --- | --- | --- |
-| ☐ | **Privacy Policy** page | Missing. Footer link "מדיניות פרטיות" is `href="#"` (`src/components/Footer.tsx`); the lead-form consent checkbox mentions the policy without a link (`src/components/LeadForm.tsx`) |
-| ☐ | **Terms of use** page | Missing. Footer link "תנאי שימוש" is `href="#"` (`src/components/Footer.tsx`) |
-| ☐ | Decisions for the client / counsel | Lead retention period; whether a consent banner is needed; Consent Mode default (Admin → Settings); disclosure of processors (Supabase, Vercel, Cloudflare, Make) |
+| ☐ | **Privacy Policy** page | **Draft written** at `/privacy`, linked from the footer and from the lead-form consent checkbox. Describes what this site actually does (Supabase, Vercel, Cloudflare Turnstile, Make, and the pixels when configured). **Needs the client's / counsel's approval before launch** |
+| ☐ | **Terms of use** page | **Draft written** at `/terms`, linked from the footer. **Needs the client's / counsel's approval before launch** |
+| ☐ | **Accessibility statement** page | **Draft written** at `/accessibility`, linked from the footer and from the accessibility widget. Coordinator is assumed to be שלומי בארון with the business phone/email and Sun–Thu 09:00–17:00 — **confirm** |
+| ☐ | Legal entity details | Company / business legal name and ח.פ./ע.מ. are not yet available; add them to the privacy policy and terms once supplied |
+| ☐ | Decisions for the client / counsel | Lead retention period; whether a consent banner is needed; Consent Mode default (Admin → Settings); whether a formal accessibility audit by a certified מורשה נגישות is required |
 
 ## 5. Domain
 
