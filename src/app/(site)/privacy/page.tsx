@@ -1,9 +1,9 @@
 import LegalPage from "@/components/LegalPage";
-import { buildPageMetadata } from "@/lookup/seo";
+import { buildPageMetadata, registeredRoute } from "@/lookup/seo";
 import { getSiteSettings } from "@/lookup/settings";
 
 export function generateMetadata() {
-  return buildPageMetadata({ path: "/privacy", title: "מדיניות פרטיות" });
+  return buildPageMetadata(registeredRoute("/privacy"));
 }
 
 // DRAFT — pending the client's confirmation and legal review (docs/launch-content-checklist.md).

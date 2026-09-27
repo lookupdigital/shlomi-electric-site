@@ -1043,7 +1043,8 @@ describe("navigation visibility (v1.2)", () => {
   it("hides nav: false routes from navigation only; omitted keeps the current behavior", () => {
     expect(navigationRoutes(routes, true).map((route) => route.path)).toEqual(["/", "/about", "/blog"]);
     expect(navigationRoutes(routes, false).map((route) => route.path)).toEqual(["/", "/about"]);
-    expect(navigationRoutes(siteConfig.routes, true)).toEqual([...siteConfig.routes.corePages, siteConfig.routes.blog]);
+    // CLIENT-OVERRIDE: this site registers its legal pages with nav: false (see docs/client-notes.md).
+    expect(navigationRoutes(siteConfig.routes, true)).toEqual([...siteConfig.routes.corePages, siteConfig.routes.blog].filter((route) => route.nav !== false));
   });
 
   it("keeps nav: false routes registered for Pages & SEO", () => {
