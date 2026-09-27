@@ -22,14 +22,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const indexable = isIndexable(settings);
   return {
     metadataBase: new URL(settings.siteUrl),
-    applicationName: settings.siteName,
+    applicationName: settings.siteName || undefined,
+    // An unconfigured site name produces no placeholder title (the admin dashboard flags the missing identity).
     title: {
       default: settings.defaultMetaTitle || settings.siteName,
-      template: `%s | ${settings.siteName}`,
+      template: settings.siteName ? `%s | ${settings.siteName}` : "%s",
     },
     description: settings.defaultMetaDescription || undefined,
     robots: { index: indexable, follow: indexable },
-    openGraph: { type: "website", locale: siteConfig.locale.ogLocale, siteName: settings.siteName },
+    openGraph: { type: "website", locale: siteConfig.locale.ogLocale, siteName: settings.siteName || undefined },
     // The admin favicon (or the logo) is the only icon: there is no static app/favicon.ico to override it.
     icons: { icon: siteIconUrl(settings), apple: siteIconUrl(settings) },
   };

@@ -5,7 +5,8 @@ import type { Database } from "@/lookup/supabase/database.types";
 
 /**
  * Privileged client using SUPABASE_SERVICE_ROLE_KEY. It bypasses RLS, so it is used ONLY for the public lead
- * pipeline (insert, rate limiting, notification state). `server-only` makes any client-side import fail the build.
+ * pipeline (insert, rate limiting, notification state) and the read-only Admin health probes (lead table reachable,
+ * media bucket config). `server-only` makes any client-side import fail the build.
  */
 export function createServiceClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

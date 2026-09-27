@@ -4,7 +4,7 @@ import BlogPostView from "@/components/BlogPostView";
 import CtaSection from "@/components/CtaSection";
 import { getPublishedPost, getPublishedPosts, type PostRow } from "@/lookup/posts";
 import { blogPostingSchema, breadcrumbSchema, JsonLd } from "@/lookup/schema";
-import { composeMetadata } from "@/lookup/seo-model";
+import { composeMetadata, postPath as buildPostPath, postSeoInput } from "@/lookup/seo-model";
 import { getSiteSettings, isIndexable } from "@/lookup/settings";
 import { absoluteUrl } from "@/lookup/settings-model";
 import { siteConfig } from "@/site.config";
@@ -29,27 +29,15 @@ async function loadPost(params: Props["params"]): Promise<PostRow | null> {
   return getPublishedPost(decoded);
 }
 
-const postPath = (slug: string) => `${blog.path}/${encodeURIComponent(slug)}`;
+const postPath = (slug: string) => buildPostPath(blog.path, slug);
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await loadPost(params);
   if (!post) return { robots: { index: false, follow: false } };
   const settings = await getSiteSettings();
   return composeMetadata({
-    settings,
+    ...postSeoInput(post, settings, blog.path, isIndexable(settings)),
     ogLocale: siteConfig.locale.ogLocale,
-    path: postPath(post.slug),
-    seo: {
-      meta_title: post.meta_title,
-      meta_description: post.meta_description,
-      canonical_url: post.canonical_url,
-      og_image_url: post.og_image_url,
-      robots_index: post.robots_index,
-    },
-    fallbackTitle: post.title,
-    fallbackDescription: post.excerpt ?? undefined,
-    fallbackImage: post.featured_image_url,
-    indexable: isIndexable(settings),
     type: "article",
     publishedTime: post.published_at ?? undefined,
     modifiedTime: post.updated_at,

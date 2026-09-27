@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { LeadMessages } from "@/lookup/config";
+import type { LeadMessages, PhoneRules } from "@/lookup/config";
 
 const optionalText = (max: number) =>
   z
@@ -12,7 +12,7 @@ const optionalText = (max: number) =>
 /** Fields a visitor fills in; any other validation failure is reported as a generic error. */
 export const LEAD_USER_FIELDS = new Set(["name", "phone", "email", "message", "projectType", "consent"]);
 
-export function createLeadSchema(messages: LeadMessages) {
+export function createLeadSchema(messages: LeadMessages, phone: Pick<PhoneRules, "minDigits" | "maxDigits">) {
   return z
     .object({
       name: z.string().trim().min(2, messages.nameRequired).max(120, messages.nameTooLong),
@@ -22,7 +22,7 @@ export function createLeadSchema(messages: LeadMessages) {
         .max(30, messages.phoneInvalid)
         .refine((value) => {
           const digits = value.replace(/\D/g, "");
-          return digits.length >= 9 && digits.length <= 15;
+          return digits.length >= phone.minDigits && digits.length <= phone.maxDigits;
         }, messages.phoneInvalid),
       email: z
         .string()

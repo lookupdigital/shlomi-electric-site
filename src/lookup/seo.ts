@@ -2,7 +2,8 @@ import "server-only";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 import { CACHE_BUILD_KEY } from "@/lookup/cache";
-import { composeMetadata } from "@/lookup/seo-model";
+import type { RouteEntry } from "@/lookup/config";
+import { composeMetadata, pageSeoInput } from "@/lookup/seo-model";
 import { getSiteSettings, isIndexable } from "@/lookup/settings";
 import type { Database } from "@/lookup/supabase/database.types";
 import { createPublicClient } from "@/lookup/supabase/public";
@@ -34,16 +35,18 @@ export async function getAllPageSeo(): Promise<Map<string, PageSeoRow>> {
   return new Map(rows.map((row) => [row.path, row]));
 }
 
+/** The registered route (site.config.ts) for a path — the entry Admin → Pages & SEO previews use too. */
+export function registeredRoute(path: string): RouteEntry {
+  const route = [...siteConfig.routes.corePages, siteConfig.routes.blog].find((entry) => entry.path === path);
+  if (!route) throw new Error(`[lookup] ${path} is not registered in siteConfig.routes`);
+  return route;
+}
+
 /** Metadata for a static public page: admin-edited SEO over code fallbacks over global settings. */
 export async function buildPageMetadata(page: { path: string; title?: string; description?: string }): Promise<Metadata> {
   const [settings, seo] = await Promise.all([getSiteSettings(), getAllPageSeo()]);
   return composeMetadata({
-    settings,
+    ...pageSeoInput(page, seo.get(page.path), settings, isIndexable(settings)),
     ogLocale: siteConfig.locale.ogLocale,
-    path: page.path,
-    seo: seo.get(page.path),
-    fallbackTitle: page.title,
-    fallbackDescription: page.description,
-    indexable: isIndexable(settings),
   });
 }

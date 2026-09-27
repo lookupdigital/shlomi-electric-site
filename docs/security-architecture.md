@@ -76,7 +76,18 @@ active redirects; leads are admin-read-only, admins may update only `status` (co
 (privacy requests); storage writes require `is_admin()`. Verified by `supabase/tests/migrations.test.ts`
 (PGlite) and against the live project by `npm run check:supabase`.
 
+## 4b. Admin content safety
+The post editor stores unsaved form fields in the admin's own browser (`localStorage`, key scoped to the admin user id
+and post id) — post content only, never tokens or secrets; cleared after a successful save. Draft autosave runs through
+the admin session (RLS) and its update filter enforces `status = 'draft'` server-side.
+
 ## 5. Secrets
 `SUPABASE_SERVICE_ROLE_KEY`, `TURNSTILE_SECRET_KEY`, `LEAD_WEBHOOK_SECRET`, `LEAD_RATE_LIMIT_SALT` and
 `E2E_TEST_TOKEN` are server-only. `npm run check:secrets` (run in CI after every build) fails if the service role key
 name or value appears in any browser-facing build output.
+
+Admin → Dashboard / Launch / System evaluate configuration on the server when those pages are opened
+(`src/lookup/admin/site-report.ts`). They render only statuses ("Configured", "Missing"…) and public identifiers
+(Supabase project host, Turnstile site key, webhook **host** only, GTM ID, site URL) — never a secret or a full webhook
+URL. Besides the lead pipeline, the service role key is used there for two read-only probes: a count-only query on
+`leads` (proves lead storage works) and reading the `media` bucket configuration.

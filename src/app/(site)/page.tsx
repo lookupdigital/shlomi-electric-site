@@ -8,13 +8,13 @@ import Reviews from "@/components/Reviews";
 import Stats from "@/components/Stats";
 import { featuredProjects } from "@/lib/site";
 import { faqSchema, JsonLd } from "@/lookup/schema";
-import { buildPageMetadata } from "@/lookup/seo";
+import { buildPageMetadata, registeredRoute } from "@/lookup/seo";
 import { getSiteSettings } from "@/lookup/settings";
 import { whatsappHref } from "@/lookup/settings-model";
 import { siteConfig } from "@/site.config";
 
 export function generateMetadata() {
-  return buildPageMetadata({ path: "/" });
+  return buildPageMetadata(registeredRoute("/"));
 }
 
 const services = [

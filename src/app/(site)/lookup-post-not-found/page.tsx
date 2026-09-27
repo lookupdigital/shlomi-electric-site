@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import NotFoundView from "@/components/NotFoundView";
+import { NotFoundView } from "@/site/adapter";
 
 // Prerendered 404 page for unknown blog slugs. src/proxy.ts rewrites those requests here with HTTP status 404,
 // so junk URLs get a fully rendered branded page without creating an ISR cache entry per URL.

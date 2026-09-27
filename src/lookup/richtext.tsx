@@ -73,7 +73,8 @@ function renderNode(node: RichTextNode, key: number, depth: number): ReactNode {
     case "image": {
       const src = safeImageSrc(node.attrs?.src);
       if (!src) return null;
-      const alt = typeof node.attrs?.alt === "string" ? node.attrs.alt : "";
+      // Decorative images are intentionally silent for screen readers; otherwise the editor's alt text (possibly empty).
+      const alt = node.attrs?.decorative === true ? "" : typeof node.attrs?.alt === "string" ? node.attrs.alt : "";
       // Content images have unknown dimensions, so a plain lazy <img> is used instead of next/image.
       // eslint-disable-next-line @next/next/no-img-element
       return <img key={key} src={src} alt={alt} loading="lazy" decoding="async" />;

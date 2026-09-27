@@ -6,7 +6,7 @@ import { siteConfig } from "@/site.config";
 const blog = siteConfig.routes.blog;
 
 export function generateMetadata() {
-  return buildPageMetadata({ path: blog.path, title: blog.title });
+  return buildPageMetadata(blog);
 }
 
 export default async function BlogPage() {

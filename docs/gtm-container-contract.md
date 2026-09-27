@@ -23,7 +23,7 @@ never on `/admin`. The container ID is set in **Admin → Site settings → Trac
 A click fires **one** event: a WhatsApp button that is also a tracked CTA sends `whatsapp_click` with `cta_name`,
 not an extra `cta_click`.
 
-`form_name` values on this site: `home_hero`, `home_cta`, `projects_cta`, `contact`, `blog_post`.
+`form_name` values in the example frontend: `home_hero`, `contact`, `blog_post`. A client site documents its own list here.
 
 `event_id` is the lead's `submission_id` (UUID, not personal data). Use it as the deduplication key for any future
 server-side conversion (Meta Conversions API, Google Ads enhanced/offline conversions, TikTok Events API).
@@ -108,7 +108,7 @@ Triggers: one **Custom Event** trigger per event name above (e.g. `CE - generate
 ## 10. QA checklist
 1. Deploy a preview with `LOOKUP_GTM_DEBUG=1`, open GTM **Preview**.
 2. Load the home page with `?utm_source=test&gclid=test`: expect `lookup_config` → `page_view` (exactly one).
-3. Navigate to /projects: exactly one additional `page_view`.
+3. Navigate to /blog: exactly one additional `page_view`.
 4. Click the WhatsApp button: exactly one `whatsapp_click` (with `cta_name`), no `cta_click`.
 5. Submit a lead with an invalid phone: `form_submit_error` (`validation`), no `generate_lead`.
 6. Submit a valid lead: exactly one `generate_lead` with an `event_id`; GA4 DebugView shows one event.

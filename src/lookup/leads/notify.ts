@@ -52,16 +52,33 @@ export async function deliverLeadNotification(leadId: string): Promise<{ ok: boo
     test: lead.is_test,
     lead: fields,
   });
-  const deliveryId = randomUUID();
 
+  const result = await postSignedWebhook(url, LEAD_WEBHOOK_EVENT, body);
+  const { error: updateError } = await supabase
+    .from("leads")
+    .update({
+      notification_status: result.ok ? "sent" : "failed",
+      notification_error: result.ok ? null : (result.error ?? "").slice(0, 500),
+      notified_at: new Date().toISOString(),
+    })
+    .eq("id", leadId);
+  if (updateError) console.error("[leads] notification state not saved:", updateError.code, updateError.message);
+  if (!result.ok) console.error("[leads] notification failed:", result.error);
+  return result;
+}
+
+/** Signed POST with retries: the single delivery path for real lead notifications and the Admin test. */
+export async function postSignedWebhook(url: string, event: string, body: string): Promise<{ ok: boolean; error?: string; status?: number }> {
+  const deliveryId = randomUUID();
   let lastError = "";
+  let status: number | undefined;
   for (const delay of RETRY_DELAYS_MS) {
     if (delay) await wait(delay);
     const timestamp = String(Math.floor(Date.now() / 1000));
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "User-Agent": "lookup-website-webhook/1",
-      "X-Lookup-Event": LEAD_WEBHOOK_EVENT,
+      "X-Lookup-Event": event,
       "X-Lookup-Delivery": deliveryId,
       "X-Lookup-Timestamp": timestamp,
     };
@@ -69,26 +86,50 @@ export async function deliverLeadNotification(leadId: string): Promise<{ ok: boo
     if (secret) headers["X-Lookup-Signature"] = signWebhookPayload(body, timestamp, secret);
     try {
       const response = await fetch(url, { method: "POST", headers, body, signal: AbortSignal.timeout(5000) });
-      if (response.ok) {
-        lastError = "";
-        break;
-      }
+      status = response.status;
+      if (response.ok) return { ok: true, status };
       lastError = `HTTP ${response.status}`;
     } catch (error) {
       lastError = (error as Error).message;
     }
   }
+  return { ok: false, error: lastError, status };
+}
 
-  const ok = lastError === "";
-  const { error: updateError } = await supabase
-    .from("leads")
-    .update({
-      notification_status: ok ? "sent" : "failed",
-      notification_error: ok ? null : lastError.slice(0, 500),
-      notified_at: new Date().toISOString(),
-    })
-    .eq("id", leadId);
-  if (updateError) console.error("[leads] notification state not saved:", updateError.code, updateError.message);
-  if (!ok) console.error("[leads] notification failed:", lastError);
-  return ok ? { ok } : { ok, error: lastError };
+export const LEAD_TEST_WEBHOOK_EVENT = "lead.test";
+
+/**
+ * Admin → Integrations "Test webhook": the same shape as a real lead notification, with every value marked TEST.
+ * Nothing is stored — no lead row, no lead metrics.
+ */
+export function buildTestWebhookBody(environment: string, now: Date = new Date(), id: string = randomUUID()): string {
+  return JSON.stringify({
+    event: LEAD_TEST_WEBHOOK_EVENT,
+    lead_id: `TEST-${id}`,
+    created_at: now.toISOString(),
+    environment,
+    test: true,
+    lead: {
+      name: "TEST — Lookup webhook test (not a real lead)",
+      phone: "TEST-0000000000",
+      email: "webhook-test@example.invalid",
+      message: "TEST ONLY: sent from Admin → Integrations to verify the webhook. Do not contact or import.",
+      project_type: null,
+      consent: true,
+      form_name: "webhook_test",
+      landing_page: "/webhook-test",
+      referrer: null,
+      utm_source: "lookup_webhook_test",
+      utm_medium: "test",
+      utm_campaign: "webhook_test",
+      utm_content: null,
+      utm_term: null,
+      gclid: null,
+      gbraid: null,
+      wbraid: null,
+      fbclid: null,
+      ttclid: null,
+      status: "new",
+    },
+  });
 }

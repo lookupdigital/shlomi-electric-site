@@ -4,10 +4,10 @@ import ProjectsGrid from "@/components/ProjectsGrid";
 import Reviews from "@/components/Reviews";
 import Stats from "@/components/Stats";
 import { projects } from "@/lib/site";
-import { buildPageMetadata } from "@/lookup/seo";
+import { buildPageMetadata, registeredRoute } from "@/lookup/seo";
 
 export function generateMetadata() {
-  return buildPageMetadata({ path: "/projects", title: "פרויקטים" });
+  return buildPageMetadata(registeredRoute("/projects"));
 }
 
 const collage = [

@@ -4,11 +4,14 @@ import { t } from "@/lookup/admin/i18n";
 
 const NAV = [
   { href: "/admin", label: t.nav.dashboard },
+  { href: "/admin/launch", label: t.nav.launch },
   { href: "/admin/settings", label: t.nav.settings },
   { href: "/admin/pages", label: t.nav.pages },
   { href: "/admin/posts", label: t.nav.posts },
+  { href: "/admin/media", label: t.nav.media },
   { href: "/admin/leads", label: t.nav.leads },
   { href: "/admin/redirects", label: t.nav.redirects },
+  { href: "/admin/system", label: t.nav.system },
 ];
 
 const signOutButton = "rounded-md border border-white/20 px-3 py-1.5 text-xs font-semibold hover:bg-white/10";

@@ -41,9 +41,10 @@ export function normalizeOrigin(value?: string | null): string {
 
 /**
  * The database is the source of truth: an empty value stays empty (no demo/code fallbacks), so a field an admin
- * clears never reappears. The only fallbacks are structural: the brand name when the site name is empty,
- * the logo file shipped with the site, the site URL from the environment, and the configured service area when the
- * settings row is unavailable or has no service_area column yet (migration 6 not applied).
+ * clears never reappears. The only fallbacks are structural: the configured site name (empty by default), the logo
+ * file shipped with the site, the site URL from the environment, and the configured service area when the settings
+ * row is unavailable or has no service_area column yet (migration 6 not applied). Consent Mode defaults to "denied"
+ * unless the settings explicitly grant it.
  */
 export function mergeSiteSettings(
   row: Partial<SiteSettingsRow> | null,
@@ -74,7 +75,7 @@ export function mergeSiteSettings(
     defaultOgImageUrl: text(row?.default_og_image_url),
     indexingEnabled: row?.indexing_enabled === true,
     localBusinessSchemaEnabled: row?.local_business_schema_enabled === true,
-    consentDefault: row?.consent_default === "denied" ? "denied" : "granted",
+    consentDefault: row?.consent_default === "granted" ? "granted" : "denied",
     tracking: {
       gtmId: text(row?.gtm_id),
       ga4Id: text(row?.ga4_id),
@@ -85,7 +86,12 @@ export function mergeSiteSettings(
   };
 }
 
-type PhoneRules = SiteConfig["phone"];
+type PhoneRules = Pick<SiteConfig["phone"], "countryCallingCode" | "nationalTrunkPrefix">;
+
+/** True when the site identity is configured: a site name, and a business name (which falls back to the site name). */
+export function hasSiteIdentity(settings: Pick<SiteSettings, "siteName" | "businessName">): boolean {
+  return Boolean(settings.siteName && settings.businessName);
+}
 
 function internationalDigits(value: string, rules: PhoneRules): string {
   const trimmed = value.trim();
@@ -98,7 +104,7 @@ function internationalDigits(value: string, rules: PhoneRules): string {
   return digits;
 }
 
-/** National numbers get the configured country code, e.g. "03-555-1234" → "tel:+97235551234". */
+/** National numbers get the configured country code, e.g. "03-000-0000" → "tel:+97230000000". */
 export function phoneHref(phone: string, rules: PhoneRules): string {
   const digits = internationalDigits(phone, rules);
   return digits ? `tel:+${digits}` : "";

@@ -4,6 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { checkbox, firstIssue, formEntries, httpsUrl, httpUrl, imageUrl, optional, type FormState } from "@/lookup/admin/form-utils";
 import { t } from "@/lookup/admin/i18n";
+import { removeUnreferencedUploads, uploadsReferencedBy } from "@/lookup/admin/media-usage";
 import { requireAdmin } from "@/lookup/auth";
 import { SITE_SETTINGS_TAG } from "@/lookup/settings";
 
@@ -48,7 +49,6 @@ const settingsSchema = z.object({
   default_meta_title: text(200),
   default_meta_description: text(500),
   default_og_image_url: optional(imageUrl),
-  indexing_enabled: checkbox,
   local_business_schema_enabled: checkbox,
   consent_default: z.enum(["granted", "denied"]),
   gtm_id: pattern(/^GTM-[A-Z0-9]{4,12}$/, s.validation.gtm),
@@ -63,11 +63,14 @@ export async function saveSiteSettings(formData: FormData): Promise<FormState> {
   const parsed = settingsSchema.safeParse(formEntries(formData));
   if (!parsed.success) return { ok: false, message: firstIssue(parsed.error, LABELS) };
 
+  const { data: previous } = await supabase.from("site_settings").select("logo_url,favicon_url,default_og_image_url").eq("id", 1).maybeSingle();
   const { data, error } = await supabase.from("site_settings").update(parsed.data).eq("id", 1).select("id");
   if (error) return { ok: false, message: t.common.saveFailed(error.message) };
   if (!data?.length) return { ok: false, message: s.missingTable };
 
   updateTag(SITE_SETTINGS_TAG);
   revalidatePath("/", "layout");
+  // A replaced or cleared logo, favicon or share image is deleted when nothing else uses it.
+  await removeUnreferencedUploads(supabase, uploadsReferencedBy(previous));
   return { ok: true, message: s.saved };
 }
