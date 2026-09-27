@@ -1,9 +1,9 @@
 import LegalPage from "@/components/LegalPage";
-import { buildPageMetadata } from "@/lookup/seo";
+import { buildPageMetadata, registeredRoute } from "@/lookup/seo";
 import { getSiteSettings } from "@/lookup/settings";
 
 export function generateMetadata() {
-  return buildPageMetadata({ path: "/accessibility", title: "הצהרת נגישות" });
+  return buildPageMetadata(registeredRoute("/accessibility"));
 }
 
 // DRAFT — pending the client's confirmation and legal review (docs/launch-content-checklist.md).

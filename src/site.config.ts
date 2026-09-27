@@ -16,6 +16,10 @@ export const siteConfig = defineSiteConfig({
       { path: "/", label: "דף הבית", navLabel: "בית" },
       { path: "/projects", label: "פרויקטים", title: "פרויקטים" },
       { path: "/contact", label: "צור קשר", title: "צור קשר" },
+      // Legal pages: registered so Pages & SEO manages their metadata and indexing; linked from the footer only.
+      { path: "/accessibility", label: "הצהרת נגישות", title: "הצהרת נגישות", nav: false },
+      { path: "/privacy", label: "מדיניות פרטיות", title: "מדיניות פרטיות", nav: false },
+      { path: "/terms", label: "תנאי שימוש", title: "תנאי שימוש", nav: false },
     ],
     blog: { path: "/blog", label: "בלוג", title: "בלוג" },
   },

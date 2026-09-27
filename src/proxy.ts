@@ -56,6 +56,6 @@ export const config = {
     "/admin/:path*",
     // Managed redirects and blog slug checks: every path except the core pages (siteConfig.routes.corePages —
     // a unit test keeps this list in sync), Next internals, API routes and files.
-    "/((?!_next/|api/|admin/|admin$|images/|icons/|projects$|contact$|.*\\.[A-Za-z0-9]+$).+)",
+    "/((?!_next/|api/|admin/|admin$|images/|icons/|projects$|contact$|accessibility$|privacy$|terms$|.*\\.[A-Za-z0-9]+$).+)",
   ],
 };

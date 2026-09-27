@@ -18,10 +18,13 @@ Keep it free of secrets.
 - Site config differences from the Starter defaults (`src/site.config.ts`): core page `/projects`, schema types
   `Electrician` + `GeneralContractor`, `quote_request` lead type with seven project types, service-area fallback,
   Shlomi brand colours and logo, FAQ structured data on (answers are confirmed and visible).
-- `src/proxy.ts` matcher also excludes `projects$` (the documented step for an extra core page; a unit test checks it).
+- `src/proxy.ts` matcher also excludes `projects$`, `accessibility$`, `privacy$`, `terms$` (the documented step for extra
+  core pages; a unit test checks it).
 - `CLIENT-OVERRIDE` changes in core paths:
+  - `src/lookup/lookup.test.ts` — the site-config navigation assertion filters `nav: false` routes (the legal pages).
   - `src/lookup/lookup.test.ts` — the single-type LocalBusiness assertion uses an explicit config instead of the
     Starter default `businessTypes`. Upstream candidate: make that Starter test config-independent.
-- Pages outside `siteConfig.routes` (not in Pages & SEO or the sitemap, unchanged by the upgrade): `/accessibility`,
-  `/privacy`, `/terms`.
+- Legal pages `/accessibility`, `/privacy`, `/terms` are registered core pages with `nav: false` (footer links only) and
+  are set to noindex/follow in Pages & SEO, so they stay out of search results and the sitemap. `src/proxy.ts` excludes
+  them like the other core pages.
 - Launch date and indexing enabled on: not launched (indexing off).
