@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { saveSiteSettings } from "@/lookup/admin/actions/settings";
 import AdminForm from "@/lookup/admin/AdminForm";
 import CountedField from "@/lookup/admin/CountedField";
@@ -37,10 +38,10 @@ export default async function SettingsPage() {
       <PageHeader title={s.title} description={s.description} />
       {error && <Notice tone="error">{t.common.loadFailed(error.message)}</Notice>}
 
-      <AdminForm action={saveSiteSettings} submitLabel={s.submit}>
-        <Fieldset legend={s.business}>
+      <AdminForm action={saveSiteSettings} submitLabel={s.submit} guardUnsaved>
+        <Fieldset legend={s.business} id="settings-business">
           <TextField label={s.businessName} name="business_name" defaultValue={row?.business_name} required maxLength={200} />
-          <TextField label={s.siteName} name="site_name" defaultValue={row?.site_name} required maxLength={200} placeholder={siteConfig.identity.siteName} />
+          <TextField label={s.siteName} name="site_name" defaultValue={row?.site_name} required maxLength={200} placeholder={siteConfig.identity.siteName || undefined} />
           <TextField label={s.siteUrl} name="site_url" defaultValue={row?.site_url} dir="ltr" placeholder="https://www.example.com" hint={s.siteUrlHint} />
           <TextField label={s.phone} name="phone" defaultValue={row?.phone} dir="ltr" maxLength={40} />
           <TextField label={s.whatsapp} name="whatsapp" defaultValue={row?.whatsapp} dir="ltr" hint={s.whatsappHint} />
@@ -60,7 +61,7 @@ export default async function SettingsPage() {
           <TextField label="YouTube" name="youtube_url" defaultValue={row?.youtube_url} dir="ltr" placeholder="https://youtube.com/…" />
         </Fieldset>
 
-        <Fieldset legend={s.seo}>
+        <Fieldset legend={s.seo} id="settings-seo">
           <CountedField label={s.defaultMetaTitle} name="default_meta_title" defaultValue={row?.default_meta_title} recommended={RECOMMENDED_LENGTH.metaTitle} maxLength={200} wide />
           <CountedField
             label={s.defaultMetaDescription}
@@ -71,11 +72,21 @@ export default async function SettingsPage() {
             multiline
           />
           <ImageField label={s.defaultOgImage} name="default_og_image_url" defaultValue={row?.default_og_image_url} hint={s.defaultOgImageHint} />
-          <CheckboxField label={s.indexing} name="indexing_enabled" defaultChecked={row?.indexing_enabled} hint={s.indexingHint} />
+          {/* Indexing is switched on the launch page (after the required checks), never by saving this form. */}
+          <div className="flex flex-col gap-1.5 md:col-span-2">
+            <span className="font-heading text-sm font-bold text-ink">{s.indexing}</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge tone={row?.indexing_enabled ? "success" : "muted"}>{row?.indexing_enabled ? s.indexingOn : s.indexingOff}</Badge>
+              <Link href="/admin/launch" className="text-sm font-semibold text-brand-dark hover:underline">
+                {s.indexingManage}
+              </Link>
+            </div>
+            <span className="text-xs text-muted">{s.indexingManaged}</span>
+          </div>
           <SelectField
             label={s.consentDefault}
             name="consent_default"
-            defaultValue={row?.consent_default ?? "granted"}
+            defaultValue={row?.consent_default ?? "denied"}
             options={[
               { value: "granted", label: s.consentGranted },
               { value: "denied", label: s.consentDenied },
@@ -85,7 +96,7 @@ export default async function SettingsPage() {
           />
         </Fieldset>
 
-        <Fieldset legend={s.tracking} description={s.trackingDescription}>
+        <Fieldset legend={s.tracking} description={s.trackingDescription} id="settings-tracking">
           {trackingField(s.gtm, "gtm_id", "GTM-XXXXXXX")}
           {trackingField(s.ga4, "ga4_id", "G-XXXXXXXXXX")}
           {trackingField(s.metaPixel, "meta_pixel_id")}

@@ -3,13 +3,15 @@ import { defineSiteConfig } from "@/lookup/config";
 // Client-specific configuration consumed by the reusable infrastructure in src/lookup.
 // Business contact details are intentionally NOT here: they live in /admin/settings (database).
 export const siteConfig = defineSiteConfig({
-  identity: { siteName: "שלומי בארון - שירותי חשמל ועבודות בנייה ושיפוצים" },
+  // Empty by design (Lookup Starter ≥ 1.0): the site name is the Admin value (site_settings.site_name).
+  identity: { siteName: "" },
   locale: { htmlLang: "he", dir: "rtl", bcp47: "he-IL", ogLocale: "he_IL", timeZone: "Asia/Jerusalem" },
-  phone: { countryCallingCode: "972", nationalTrunkPrefix: "0" },
+  phone: { countryCallingCode: "972", nationalTrunkPrefix: "0", minDigits: 9, maxDigits: 15 },
   // Fallback only — the service area is edited in Admin → Site settings. Keep in sync with the confirmed value.
   business: { serviceArea: "בעיקר גוש דן, וכן אזורים סמוכים בצפון ובדרום" },
   schema: { businessTypes: ["Electrician", "GeneralContractor"] },
   routes: {
+    // Adding or removing a core page? Update the matcher in src/proxy.ts too (a unit test checks it).
     corePages: [
       { path: "/", label: "דף הבית", navLabel: "בית" },
       { path: "/projects", label: "פרויקטים", title: "פרויקטים" },
@@ -19,6 +21,8 @@ export const siteConfig = defineSiteConfig({
   },
   leads: {
     leadType: "quote_request",
+    // Options of the lead form's "project type" field (rendered by src/components/LeadForm.tsx).
+    projectTypes: ["עבודות חשמל", "הקמת משרדים", "שיפוץ משרדים", "עבודות גמר", "אינסטלציה", "עבודות גבס", "אחר"],
     rateLimit: { maxSubmissions: 5, windowSeconds: 600 },
     messages: {
       nameRequired: "נא למלא שם מלא",

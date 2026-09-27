@@ -12,6 +12,8 @@
     "test:e2e": "playwright test",
     "db:types": "node scripts/generate-db-types.mjs",
     "db:types:check": "node scripts/generate-db-types.mjs --check",
+    "db:install-sql": "node scripts/build-install-sql.mjs",
+    "db:install-sql:check": "node scripts/build-install-sql.mjs --check",
     "check:secrets": "node scripts/check-secrets.mjs",
     "check:supabase": "node scripts/check-supabase.mjs"
   },

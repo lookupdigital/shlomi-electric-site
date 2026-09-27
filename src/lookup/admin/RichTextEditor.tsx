@@ -8,6 +8,51 @@ import { t } from "@/lookup/admin/i18n";
 import { ACCEPTED_IMAGE_TYPES, uploadImage } from "@/lookup/media";
 
 const EMPTY_DOC: JSONContent = { type: "doc", content: [{ type: "paragraph" }] };
+
+/** Image node with an explicit "decorative" flag (rendered with alt=""). Images without the flag stay non-decorative. */
+const ContentImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      decorative: {
+        default: false,
+        parseHTML: (element: HTMLElement) => element.getAttribute("data-decorative") === "true",
+        renderHTML: (attributes: { decorative?: boolean }) => (attributes.decorative ? { "data-decorative": "true" } : {}),
+      },
+    };
+  },
+});
+
+/** Alt text and decorative toggle for the selected image — editable at any time after insertion. */
+function ImageAltPanel({ editor }: { editor: Editor }) {
+  if (!editor.isActive("image")) return null;
+  const attrs = editor.getAttributes("image") as { alt?: string | null; decorative?: boolean };
+  const alt = attrs.alt ?? "";
+  const decorative = attrs.decorative === true;
+  const update = (next: { alt?: string; decorative?: boolean }) => editor.chain().updateAttributes("image", next).run();
+  return (
+    <div className="flex flex-col gap-2 border-b border-line bg-white p-3 text-sm" aria-label={t.editor.imageSettings}>
+      <label className="flex flex-col gap-1">
+        <span className="font-heading font-bold text-ink">{t.editor.imageAlt}</span>
+        <input
+          value={alt}
+          disabled={decorative}
+          onChange={(event) => update({ alt: event.target.value })}
+          maxLength={300}
+          className="field disabled:opacity-60"
+        />
+      </label>
+      <label className="flex items-start gap-2">
+        <input type="checkbox" checked={decorative} onChange={(event) => update({ decorative: event.target.checked })} className="consent mt-0.5" />
+        <span className="flex flex-col">
+          <span className="font-semibold text-ink">{t.editor.imageDecorative}</span>
+          <span className="text-xs text-muted">{t.editor.imageDecorativeHint}</span>
+        </span>
+      </label>
+      {!decorative && alt.trim() === "" && <span className="text-xs font-semibold text-amber-800">{t.editor.imageAltMissing}</span>}
+    </div>
+  );
+}
 const SAFE_LINK = /^(https?:\/\/|mailto:|tel:|\/(?!\/)|#)/i;
 
 function ToolbarButton({ label, active, onClick, children }: { label: string; active?: boolean; onClick: () => void; children: ReactNode }) {
@@ -110,7 +155,7 @@ export default function RichTextEditor({ name, initialContent }: { name: string;
         underline: false,
         link: { openOnClick: false, autolink: true, defaultProtocol: "https", isAllowedUri: (url) => SAFE_LINK.test(url) },
       }),
-      Image.configure({ inline: false, allowBase64: false }),
+      ContentImage.configure({ inline: false, allowBase64: false }),
     ],
     content: initial,
     editorProps: { attributes: { class: "rich-text min-h-[320px] px-5 py-4 focus:outline-none", dir: t.dir } },
@@ -136,7 +181,10 @@ export default function RichTextEditor({ name, initialContent }: { name: string;
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-white">
       {editor ? (
-        <Toolbar editor={editor} onImage={() => fileInput.current?.click()} uploading={uploading} />
+        <>
+          <Toolbar editor={editor} onImage={() => fileInput.current?.click()} uploading={uploading} />
+          <ImageAltPanel editor={editor} />
+        </>
       ) : (
         <div className="h-[53px] border-b border-line bg-offwhite" />
       )}

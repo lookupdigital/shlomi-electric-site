@@ -4,12 +4,12 @@ import CtaSection from "@/components/CtaSection";
 import Faq from "@/components/Faq";
 import Stats from "@/components/Stats";
 import { faqSchema, JsonLd } from "@/lookup/schema";
-import { buildPageMetadata } from "@/lookup/seo";
+import { buildPageMetadata, registeredRoute } from "@/lookup/seo";
 import { getSiteSettings } from "@/lookup/settings";
 import { siteConfig } from "@/site.config";
 
 export function generateMetadata() {
-  return buildPageMetadata({ path: "/contact", title: "צור קשר" });
+  return buildPageMetadata(registeredRoute("/contact"));
 }
 
 // Answers use only confirmed facts (the service area comes from Admin → Site settings) and what the site itself

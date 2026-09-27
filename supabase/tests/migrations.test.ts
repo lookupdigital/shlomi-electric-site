@@ -65,11 +65,73 @@ describe("Lookup migrations", () => {
     await expect(db.exec(migration("lookup_hardening"))).rejects.toThrow(/already applied/);
   });
 
+  it("a fresh install starts unconfigured: empty identity, indexing off, Consent Mode denied", async () => {
+    const { rows } = await db.query("select site_name, business_name, indexing_enabled, local_business_schema_enabled, consent_default, gtm_id from public.site_settings");
+    expect(rows).toEqual([
+      { site_name: null, business_name: null, indexing_enabled: false, local_business_schema_enabled: false, consent_default: "denied", gtm_id: null },
+    ]);
+  });
+
+  it("the fresh-install bundle creates the same unconfigured install in one transaction", async () => {
+    const bundled = await freshDatabase();
+    await bundled.exec(readFileSync(join(process.cwd(), "supabase", "install", "fresh-install.sql"), "utf8"));
+    const { rows } = await bundled.query("select site_name, indexing_enabled, consent_default from public.site_settings");
+    expect(rows).toEqual([{ site_name: null, indexing_enabled: false, consent_default: "denied" }]);
+    const tables = "select table_name from information_schema.tables where table_schema = 'public' order by 1";
+    expect((await bundled.query(tables)).rows).toEqual((await db.query(tables)).rows);
+    // A second run is refused and leaves the install untouched.
+    await expect(bundled.exec(readFileSync(join(process.cwd(), "supabase", "install", "fresh-install.sql"), "utf8"))).rejects.toThrow(/aborted/);
+    await bundled.exec("rollback;").catch(() => undefined);
+    expect((await bundled.query("select count(*)::int as n from public.site_settings")).rows).toEqual([{ n: 1 }]);
+  });
+
+  it("the consent default migration keeps the saved value of an already configured site and refuses to run twice", async () => {
+    await expect(db.exec(migration("lookup_consent_default_denied"))).rejects.toThrow(/already applied/);
+    const configured = await freshDatabase();
+    for (const sql of migrations.slice(0, 6)) await configured.exec(sql);
+    await configured.exec("update public.site_settings set site_name = 'Existing site', business_name = 'Existing business', consent_default = 'granted'");
+    await configured.exec(migration("lookup_consent_default_denied"));
+    const { rows } = await configured.query("select consent_default from public.site_settings");
+    expect(rows).toEqual([{ consent_default: "granted" }]);
+    const early = await freshDatabase();
+    for (const sql of migrations.slice(0, 5)) await early.exec(sql);
+    await expect(early.exec(migration("lookup_consent_default_denied"))).rejects.toThrow(/apply migrations 1-6 first/);
+  });
+
   it("the service area migration refuses to run twice or before migration 5", async () => {
     await expect(db.exec(migration("lookup_service_area"))).rejects.toThrow(/already applied/);
     const other = await freshDatabase();
     for (const sql of migrations.slice(0, 4)) await other.exec(sql);
     await expect(other.exec(migration("lookup_service_area"))).rejects.toThrow(/apply migrations 1-5 first/);
+  });
+
+  it("the post social SEO migration (8) is additive, keeps existing posts unchanged and refuses to run twice or early", async () => {
+    await expect(db.exec(migration("lookup_post_social_seo"))).rejects.toThrow(/already applied/);
+    const early = await freshDatabase();
+    for (const sql of migrations.slice(0, 6)) await early.exec(sql);
+    await expect(early.exec(migration("lookup_post_social_seo"))).rejects.toThrow(/apply migrations 1-7 first/);
+    expect((await early.query("select column_name from information_schema.columns where table_name = 'posts' and column_name = 'og_title'")).rows).toEqual([]);
+
+    const upgraded = await freshDatabase();
+    for (const sql of migrations.slice(0, 7)) await upgraded.exec(sql);
+    await upgraded.exec(
+      "insert into public.posts (title, slug, status, meta_title, robots_index) values ('Existing', 'existing', 'draft', 'Kept title', false)",
+    );
+    const before = (await upgraded.query("select title, slug, status, meta_title, robots_index, updated_at from public.posts")).rows;
+    await upgraded.exec(migration("lookup_post_social_seo"));
+    expect((await upgraded.query("select title, slug, status, meta_title, robots_index, updated_at from public.posts")).rows).toEqual(before);
+    expect((await upgraded.query("select og_title, og_description, robots_follow from public.posts")).rows).toEqual([
+      { og_title: null, og_description: null, robots_follow: true },
+    ]);
+    await expect(upgraded.exec(`update public.posts set og_title = '${"x".repeat(201)}'`)).rejects.toThrow();
+    await expect(upgraded.exec(`update public.posts set og_description = '${"x".repeat(501)}'`)).rejects.toThrow();
+    await expect(upgraded.exec("update public.posts set robots_follow = null")).rejects.toThrow();
+
+    // A fresh install has exactly the same post columns as an upgraded install.
+    const columns = "select column_name, data_type, is_nullable, column_default from information_schema.columns where table_schema = 'public' and table_name = 'posts' order by column_name";
+    const bundled = await freshDatabase();
+    await bundled.exec(readFileSync(join(process.cwd(), "supabase", "install", "fresh-install.sql"), "utf8"));
+    expect((await bundled.query(columns)).rows).toEqual((await upgraded.query(columns)).rows);
   });
 
   it("admins can edit the service area; the public can read it but not change it", async () => {
@@ -161,5 +223,25 @@ describe("Lookup migrations", () => {
   it("only admins can upload to the media bucket", async () => {
     await expect(as(db, "authenticated", USER, "insert into storage.objects (bucket_id, name) values ('media', 'a.png')")).rejects.toThrow(/row-level security/);
     expect(await as(db, "authenticated", ADMIN, "insert into storage.objects (bucket_id, name) values ('media', 'a.png') returning id")).toHaveLength(1);
+  });
+
+  it("only admins can delete media objects (Admin → Media and replaced-image cleanup)", async () => {
+    await db.exec("insert into storage.objects (bucket_id, name) values ('media', 'uploads/delete-me.png')");
+    const remove = "delete from storage.objects where bucket_id = 'media' and name = 'uploads/delete-me.png' returning id";
+    expect(await as(db, "anon", null, remove)).toHaveLength(0);
+    expect(await as(db, "authenticated", USER, remove)).toHaveLength(0);
+    expect(await as(db, "authenticated", ADMIN, remove)).toHaveLength(1);
+  });
+
+  it("only admins can delete posts and reset page SEO overrides", async () => {
+    await db.exec(`
+      insert into public.posts (title, slug, status, published_at) values ('Delete me', 'delete-me', 'published', now() - interval '1 hour');
+      insert into public.page_seo (path, meta_title) values ('/contact', 'Custom');
+    `);
+    for (const sql of ["delete from public.posts where slug = 'delete-me' returning id", "delete from public.page_seo where path = '/contact' returning path"]) {
+      await expect(as(db, "anon", null, sql)).rejects.toThrow(/permission denied/);
+      expect(await as(db, "authenticated", USER, sql)).toHaveLength(0);
+      expect(await as(db, "authenticated", ADMIN, sql)).toHaveLength(1);
+    }
   });
 });

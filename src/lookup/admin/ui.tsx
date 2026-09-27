@@ -21,9 +21,9 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
   return <div className={`rounded-xl border border-line bg-white p-5 lg:p-6 ${className}`}>{children}</div>;
 }
 
-export function Fieldset({ legend, description, children }: { legend: string; description?: string; children: ReactNode }) {
+export function Fieldset({ legend, description, id, children }: { legend: string; description?: string; id?: string; children: ReactNode }) {
   return (
-    <fieldset className="min-w-0 rounded-xl border border-line bg-white p-5 lg:p-6">
+    <fieldset id={id} className="min-w-0 scroll-mt-6 rounded-xl border border-line bg-white p-5 lg:p-6">
       <legend className="px-2 font-heading text-lg font-semibold text-ink">{legend}</legend>
       {description && <p className="mb-4 text-sm text-muted">{description}</p>}
       <div className="grid gap-5 md:grid-cols-2">{children}</div>

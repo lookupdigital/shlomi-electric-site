@@ -22,7 +22,7 @@ export default async function RedirectsPage({ searchParams }: PageProps<"/admin/
         {typeof errorParam === "string" && <Notice tone="error">{errorParam}</Notice>}
         {error && <Notice tone="error">{t.common.loadFailed(error.message)}</Notice>}
 
-        <AdminForm action={createRedirect} submitLabel={r.submit}>
+        <AdminForm action={createRedirect} submitLabel={r.submit} guardUnsaved>
           <Fieldset legend={r.newRedirect}>
             <TextField label={r.source} name="source_path" dir="ltr" placeholder="/old-page" required />
             <TextField label={r.destination} name="destination" dir="ltr" placeholder="/new-page · https://…" required />

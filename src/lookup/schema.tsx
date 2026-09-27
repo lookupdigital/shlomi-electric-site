@@ -5,6 +5,8 @@ type Schema = Record<string, unknown>;
 
 /** Renders JSON-LD safely ("<" is escaped so admin-edited text cannot break out of the script tag). */
 export function JsonLd({ data }: { data: Schema | Schema[] }) {
+  // An unconfigured site has no nodes: emit nothing rather than an empty graph.
+  if (Array.isArray(data) && data.length === 0) return null;
   const payload = Array.isArray(data)
     ? { "@context": "https://schema.org", "@graph": data }
     : { "@context": "https://schema.org", ...data };
@@ -41,7 +43,14 @@ export function websiteSchema(settings: SiteSettings, config: SchemaConfig): Sch
   };
 }
 
-/** Only emitted after an admin confirms the business details are real (local_business_schema_enabled). */
+/**
+ * LocalBusiness is emitted only when an admin enabled it (local_business_schema_enabled) AND the minimum real business
+ * data exists: a business name plus a phone or an address. Placeholder or incomplete entities are never output.
+ */
+export function canEmitLocalBusiness(settings: SiteSettings): boolean {
+  return settings.localBusinessSchemaEnabled && Boolean(settings.businessName) && Boolean(settings.phone || settings.address);
+}
+
 export function localBusinessSchema(settings: SiteSettings, config: SchemaConfig): Schema {
   return {
     "@type": config.schema.businessTypes.length === 1 ? config.schema.businessTypes[0] : config.schema.businessTypes,
@@ -57,11 +66,12 @@ export function localBusinessSchema(settings: SiteSettings, config: SchemaConfig
   };
 }
 
+/** Site-wide entities. Nothing is emitted for an unconfigured identity (no site/business name yet). */
 export function siteSchemas(settings: SiteSettings, config: SchemaConfig): Schema[] {
   return [
-    organizationSchema(settings),
-    websiteSchema(settings, config),
-    ...(settings.localBusinessSchemaEnabled ? [localBusinessSchema(settings, config)] : []),
+    ...(settings.businessName ? [organizationSchema(settings)] : []),
+    ...(settings.siteName ? [websiteSchema(settings, config)] : []),
+    ...(canEmitLocalBusiness(settings) ? [localBusinessSchema(settings, config)] : []),
   ];
 }
 

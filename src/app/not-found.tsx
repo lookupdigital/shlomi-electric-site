@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import NotFoundView from "@/components/NotFoundView";
-import SiteChrome from "@/components/SiteChrome";
 import { getSiteSettings } from "@/lookup/settings";
+import { NotFoundView, SiteChrome } from "@/site/adapter";
 
 export const metadata: Metadata = {
   title: "העמוד לא נמצא",

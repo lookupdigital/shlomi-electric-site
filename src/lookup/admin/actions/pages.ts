@@ -1,17 +1,22 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { checkbox, firstIssue, formEntries, httpUrl, imageUrl, optional, type FormState } from "@/lookup/admin/form-utils";
 import { t } from "@/lookup/admin/i18n";
+import { removeUnreferencedUploads, uploadsReferencedBy } from "@/lookup/admin/media-usage";
+import { resetRedirect } from "@/lookup/admin/page-seo-form";
 import { requireAdmin } from "@/lookup/auth";
 import { PAGE_SEO_TAG } from "@/lookup/seo";
 import { siteConfig } from "@/site.config";
 
 const EDITABLE_PATHS = new Set<string>([...siteConfig.routes.corePages, siteConfig.routes.blog].map((route) => route.path));
 
+const editablePath = z.string().refine((path) => EDITABLE_PATHS.has(path), t.pages.unknownPage);
+
 const pageSeoSchema = z.object({
-  path: z.string().refine((path) => EDITABLE_PATHS.has(path), t.pages.unknownPage),
+  path: editablePath,
   meta_title: optional(z.string().max(200)),
   meta_description: optional(z.string().max(500)),
   canonical_url: optional(httpUrl),
@@ -29,11 +34,31 @@ export async function savePageSeo(formData: FormData): Promise<FormState> {
   const parsed = pageSeoSchema.safeParse(formEntries(formData));
   if (!parsed.success) return { ok: false, message: firstIssue(parsed.error, LABELS) };
 
+  const { data: previous } = await supabase.from("page_seo").select("og_image_url").eq("path", parsed.data.path).maybeSingle();
   const { data, error } = await supabase.from("page_seo").upsert(parsed.data, { onConflict: "path" }).select("path");
   if (error) return { ok: false, message: t.common.saveFailed(error.message) };
   if (!data?.length) return { ok: false, message: t.common.noPermission };
 
   updateTag(PAGE_SEO_TAG);
   revalidatePath("/", "layout");
+  await removeUnreferencedUploads(supabase, uploadsReferencedBy(previous));
   return { ok: true, message: t.pages.saved };
+}
+
+/**
+ * Removes the page's SEO overrides. A page without a page_seo row uses the automatic defaults (title, description,
+ * canonical, share image, index/follow), so deleting the row is exactly "back to defaults".
+ */
+export async function resetPageSeo(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const parsed = z.object({ path: editablePath }).safeParse(formEntries(formData));
+  if (!parsed.success) redirect(`/admin/pages?error=${encodeURIComponent(t.pages.unknownPage)}`);
+
+  const { data, error } = await supabase.from("page_seo").delete().eq("path", parsed.data.path).select("og_image_url");
+  if (error) redirect(`/admin/pages?error=${encodeURIComponent(t.common.saveFailed(error.message))}`);
+
+  updateTag(PAGE_SEO_TAG);
+  revalidatePath("/", "layout");
+  await removeUnreferencedUploads(supabase, uploadsReferencedBy(data));
+  redirect(resetRedirect(parsed.data.path, Date.now()));
 }

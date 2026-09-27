@@ -1,7 +1,14 @@
 import { z } from "zod";
 import { t } from "@/lookup/admin/i18n";
 
-export type FormState = { ok: boolean; message: string } | null;
+export type FormState = {
+  ok: boolean;
+  message: string;
+  /** Post saves: the stored version after the save, used as the base of the next save. */
+  updatedAt?: string;
+  /** Post saves: rejected because the post changed after the editor loaded it. */
+  conflict?: boolean;
+} | null;
 
 export function formEntries(formData: FormData): Record<string, string> {
   const entries: Record<string, string> = {};

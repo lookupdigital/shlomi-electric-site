@@ -181,8 +181,11 @@ export type Database = {
           id: string;
           meta_description: string | null;
           meta_title: string | null;
+          og_description: string | null;
           og_image_url: string | null;
+          og_title: string | null;
           published_at: string | null;
+          robots_follow: boolean;
           robots_index: boolean;
           slug: string;
           status: string;
@@ -201,8 +204,11 @@ export type Database = {
           id?: string;
           meta_description?: string | null;
           meta_title?: string | null;
+          og_description?: string | null;
           og_image_url?: string | null;
+          og_title?: string | null;
           published_at?: string | null;
+          robots_follow?: boolean;
           robots_index?: boolean;
           slug: string;
           status?: string;
@@ -221,8 +227,11 @@ export type Database = {
           id?: string;
           meta_description?: string | null;
           meta_title?: string | null;
+          og_description?: string | null;
           og_image_url?: string | null;
+          og_title?: string | null;
           published_at?: string | null;
+          robots_follow?: boolean;
           robots_index?: boolean;
           slug?: string;
           status?: string;

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import BlogPostView from "@/components/BlogPostView";
-import SiteChrome from "@/components/SiteChrome";
+import { BlogPostView, SiteChrome } from "@/site/adapter";
 import { t } from "@/lookup/admin/i18n";
 import { requireAdmin } from "@/lookup/auth";
 import { getSiteSettings } from "@/lookup/settings";

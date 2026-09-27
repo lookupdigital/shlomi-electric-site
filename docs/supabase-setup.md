@@ -1,81 +1,71 @@
-# Supabase setup — project `shlomiboaron` (ap-northeast-1)
+# Supabase setup
 
-One Supabase project serves local development, Vercel Preview and Vercel Production. Do not create another project
-and do not change the region.
+One Supabase project per client site. Local development, Vercel Preview and Production may share it: non-production
+leads are stored as test leads and never reach the production webhook.
 
-## 1. Environment variables
+## 1. Create the project
+Supabase → **New project**. Pick the region closest to the client's visitors (it cannot be changed later). Save the
+database password in the password manager (the site does not use it).
 
-Supabase Dashboard → project **shlomiboaron** → **Project Settings → API Keys**:
+## 2. Keys → environment
+**Project Settings → API Keys**:
 
 | Copy | Paste as |
 | --- | --- |
-| Project URL (`https://<ref>.supabase.co` — include `https://`) | `NEXT_PUBLIC_SUPABASE_URL` |
-| `anon` / publishable key | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
-| `service_role` / secret key (click **Reveal**) | `SUPABASE_SERVICE_ROLE_KEY` |
+| Project URL (with `https://`) | `NEXT_PUBLIC_SUPABASE_URL` |
+| Publishable / `anon` key | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
+| Secret / `service_role` key | `SUPABASE_SERVICE_ROLE_KEY` (server only, Sensitive on Vercel) |
 
-Optional variables (lead webhook, Turnstile, admin host, environment) are documented in `.env.example`.
+## 3. Database — fresh install (new project)
+**SQL Editor → New query** → paste the whole of `supabase/install/fresh-install.sql` → **Run**. One transaction:
+tables, RLS policies, functions, the `media` storage bucket and the single settings row. Expect "Success. No rows
+returned".
 
-- **Local:** `.env.local` in the repository root (git-ignored); restart the server after changes.
-- **Vercel:** Project → **Settings → Environment Variables**. The per-environment checklist (Preview vs Production,
-  Sensitive flags) is in `docs/vercel-preview.md`. Redeploy after changes (`NEXT_PUBLIC_*` values are baked in at
-  build time).
+The file is generated from `supabase/migrations` (`npm run db:install-sql`; CI checks it is current). Running it a
+second time is refused without changes.
 
-## 2. Migrations
+A new install starts unconfigured: empty site identity, indexing off, LocalBusiness off, Consent Mode default
+**denied**, no GTM.
 
-**SQL Editor → New query** → paste each file's full contents → **Run**, strictly in order:
+## 4. Auth settings
+**Authentication → Sign In / Providers**: Email enabled; **Allow new users to sign up: OFF**.
 
-1. `supabase/migrations/20260915130000_lookup_foundation.sql`
-2. `supabase/migrations/20260915130100_lookup_content.sql`
-3. `supabase/migrations/20260915130200_lookup_leads.sql`
-4. `supabase/migrations/20260915130300_lookup_media_storage.sql`
-5. `supabase/migrations/20260916090000_lookup_hardening.sql` — lead status / test flag / notification state,
-   admin update & delete, rate limiting, Consent Mode default, generalized blog slugs.
-6. `supabase/migrations/20260916120000_lookup_service_area.sql` — admin-editable service area
-   (`site_settings.service_area`). Until it is applied the site shows the fallback from `src/site.config.ts` and
-   saving Admin → Site settings fails.
+**Authentication → URL Configuration**: Site URL = the production URL (the `*.vercel.app` URL until the domain
+exists). Redirect URLs: `http://localhost:3000/**` and `<production URL>/**`.
 
-Each migration aborts without changes if it has already been applied (or if the previous ones are missing). All are
-additive. For certainty in the SQL Editor, wrap a paste in `begin;` … `commit;`.
+## 5. First admin
+1. **Authentication → Users → Add user → Create new user**: email + strong password, tick **Auto Confirm User**.
+2. SQL Editor: paste `supabase/install/first-admin.sql`, replace the email, run (expect `INSERT 0 1`).
+3. Sign in at `/admin/login`.
 
-After schema changes in code, regenerate types: `npm run db:types` (CI fails if they are out of date).
+Remove an admin: `delete from public.admin_users where user_id = (select id from auth.users where email = '…');`
 
-> If the Supabase CLI is linked later, mark these as applied so they are not replayed:
-> `npx supabase migration repair --status applied 20260915130000 20260915130100 20260915130200 20260915130300 20260916090000 20260916120000`
+## 6. Verify
+`npm run check:supabase` (with the project's keys in `.env.local`): sign-up disabled, anonymous users cannot read or
+write leads/admin data. The Admin dashboard also shows an error if sign-up is ever re-enabled or the schema is
+missing.
 
-### One-time client seed (this site only)
-`supabase/seeds/initial-site-settings.sql` copies the contact details the site showed before (still the Figma demo
-values) into the settings row, filling only empty fields. Run it once after migration 5 so the header and footer
-keep their current content until real details are entered in the admin.
+## Upgrading an existing project
+Apply only the new files from `supabase/migrations`, in filename order, in the SQL Editor. Every migration checks its
+prerequisites and aborts without changes if it was already applied. Record which files ran in the client's
+`docs/client-notes.md`.
 
-## 3. Auth settings
-**Authentication → Sign In / Providers**
-- Email provider: enabled.
-- **Allow new users to sign up: OFF.**
+> If the Supabase CLI is linked later, mark the applied migrations with
+> `npx supabase migration repair --status applied <versions…>` so they are not replayed.
 
-**Authentication → URL Configuration**
-- Site URL: the production URL. Redirect URLs: `http://localhost:3000/**` and the production URL with `/**`.
+### Migration list
+1. `20260915130000_lookup_foundation.sql` — admin allowlist, `is_admin()`, `site_settings`
+2. `20260915130100_lookup_content.sql` — page SEO, posts, redirects
+3. `20260915130200_lookup_leads.sql` — leads
+4. `20260915130300_lookup_media_storage.sql` — `media` bucket and policies
+5. `20260916090000_lookup_hardening.sql` — lead status/test flag/notifications, rate limiting, Consent Mode setting
+6. `20260916120000_lookup_service_area.sql` — `site_settings.service_area`
+7. `20260917090000_lookup_consent_default_denied.sql` — Consent Mode default `denied` for new installs; an already
+   configured site keeps its saved value
+8. `20260918090000_lookup_post_social_seo.sql` — posts `og_title`, `og_description`, `robots_follow` (v1.2; additive,
+   existing posts keep their behavior). Until it is applied the site keeps working, Admin → System shows the database
+   version warning, and post saves that set one of these fields are refused with an explanation.
 
-Verify with `npm run check:supabase` (read-only; fails if sign-up is enabled or private tables are publicly readable).
-
-## 4. Admins
-1. **Authentication → Users → Add user → Create new user** (email + strong password, tick **Auto Confirm User**).
-2. SQL Editor:
-   ```sql
-   insert into public.admin_users (user_id) select id from auth.users where email = 'admin@example.com';
-   ```
-3. Sign in at `/admin/login`. Sessions last 12 hours of inactivity (HttpOnly cookie scoped to `/admin`).
-
-After upgrading from a version before the hardening pass, every admin must sign in again once (the old
-JavaScript-readable cookies are ignored and deleted automatically).
-
-To remove an admin: `delete from public.admin_users where user_id = (select id from auth.users where email = '…');`
-
-## 5. Test data
-Leads are stored with `is_test = true` when they come from an automated test (`E2E_TEST_TOKEN`) or from any
-non-production deployment (Vercel Preview, local). Test leads are hidden from the admin lead list by default (tick
-"include test leads"), excluded from exports and dashboard counts, and never sent to the production webhook. A
-Preview deployment sends its test leads to its own `LEAD_WEBHOOK_URL`, with `"test": true` and
-`"environment": "preview"` in the payload. Remove them with:
-```sql
-delete from public.leads where is_test;
-```
+## Test data
+Test leads (`is_test = true`) come from non-production deployments and from the Playwright test. They are hidden
+from the default lead list, exports and counts. Remove them with `delete from public.leads where is_test;`

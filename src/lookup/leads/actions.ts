@@ -20,7 +20,7 @@ export type LeadSubmissionResult =
   | { ok: false; error: "server" };
 
 const UNIQUE_VIOLATION = "23505";
-const leadSchema = createLeadSchema(siteConfig.leads.messages);
+const leadSchema = createLeadSchema(siteConfig.leads.messages, siteConfig.phone);
 
 /**
  * Public lead endpoint. Order: honeypot → validation → Turnstile → rate limit → insert → notification (after).

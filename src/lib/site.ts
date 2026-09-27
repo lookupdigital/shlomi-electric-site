@@ -1,15 +1,9 @@
+import { siteConfig } from "@/site.config";
+
 // Client-specific page content. Business contact details live in /admin/settings; navigation comes from
 // siteConfig.routes (src/site.config.ts).
 
-export const projectTypes = [
-  "עבודות חשמל",
-  "הקמת משרדים",
-  "שיפוץ משרדים",
-  "עבודות גמר",
-  "אינסטלציה",
-  "עבודות גבס",
-  "אחר",
-];
+export const projectTypes = siteConfig.leads.projectTypes;
 
 export type Review = {
   paragraphs: string[];

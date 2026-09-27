@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import AccessibilityWidget from "@/components/AccessibilityWidget";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import { navigationRoutes } from "@/lookup/config";
 import { getPublishedPosts } from "@/lookup/posts";
 import { phoneHref, type SiteSettings } from "@/lookup/settings-model";
 import { siteConfig } from "@/site.config";
@@ -11,8 +12,7 @@ export type NavLink = { href: string; label: string };
 /** Public header + main + footer. The blog link appears once at least one post is published. */
 export default async function SiteChrome({ settings, children }: { settings: SiteSettings; children: ReactNode }) {
   const posts = await getPublishedPosts();
-  const { corePages, blog } = siteConfig.routes;
-  const links: NavLink[] = [...corePages, ...(posts.length > 0 ? [blog] : [])].map((route) => ({
+  const links: NavLink[] = navigationRoutes(siteConfig.routes, posts.length > 0).map((route) => ({
     href: route.path,
     label: route.navLabel ?? route.label,
   }));
